@@ -42,7 +42,8 @@ def main() -> None:
     if golden.strip() != java_golden.strip():
         raise ValueError("Java/C++ golden frames differ")
     run("java", "-cp", str(java), f"{PACKAGE}.ProcessTests", str(peer))
-    print("bridge-contract: passed (controlled world)")
+    run("java", "-cp", str(java), f"{PACKAGE}.PipeTests", str(bin_dir / f"hc-pipe-peer{extension}"))
+    print("bridge-contract: passed (controlled world and native pipe faults)")
 
 
 if __name__ == "__main__":

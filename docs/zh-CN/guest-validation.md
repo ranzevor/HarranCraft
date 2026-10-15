@@ -19,7 +19,7 @@ python tools/package.py
 python tools/test_bridge.py
 ```
 
-桥接命令构建 C++ 测试、编译无第三方依赖的 Java 协议核心、执行核心和生命周期回归、比对完整跨语言参考帧，并启动真实 Java／C++ 进程访问受控世界；不会启动 Minecraft。应分别在 Linux 和目标 Windows 工具链运行。
+桥接命令构建 C++ 测试、编译无第三方依赖的 Java 协议核心、执行核心和生命周期回归、比对完整跨语言参考帧，并启动真实 Java／C++ 进程访问受控世界；还会运行 `hc-pipe-peer` 故障场景并确认工作线程及进程实际结束。Linux 通过 `/proc/self/fd` 测量文件描述符数量，不支持时单独报告该测量未提供。命令不会启动 Minecraft；应分别在 Linux 和目标 Windows 工具链运行。
 
 ## Fabric 编译
 
@@ -43,7 +43,7 @@ python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true runGa
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true -PpeerExecutable=../build/bridge/native/hc-bridge-peer runClientGameTest
 ```
 
-Windows Visual Studio 多配置构建将对端参数改为 `-PpeerExecutable=../build/bridge/native/Debug/hc-bridge-peer.exe`。该路径相对 `guest/` 解析；使用其他 CMake 生成器时以实际输出为准。客户端测试需要可用图形会话，检查放置、服务端权威状态、独立方块变化、移除、旧代次、无效版本及断连清理，并捕获空场景／放置后／移除后三张截图。GameTest 世界位于 `guest/build/run`，报告和截图保存在生成的构建输出目录；不得将运行目录指向已有存档。
+Windows Visual Studio 多配置构建将对端参数改为 `-PpeerExecutable=../build/bridge/native/Debug/hc-bridge-peer.exe`。该路径相对 `guest/` 解析；使用其他 CMake 生成器时以实际输出为准。客户端测试需要可用图形会话，检查放置、服务端权威状态、独立方块变化、移除、旧代次、无效版本及断连清理，使用显式的自有对端取消回调并检查传输实际结束，并捕获空场景／放置后／移除后三张截图。GameTest 世界位于 `guest/build/run`，报告和截图保存在生成的构建输出目录；不得将运行目录指向已有存档。
 
 记录实际退出码、源码提交、JDK／编译器及所选依赖版本，保留失败日志并检查三张截图。真实局域网／模式转换、Windows 执行、完整 Fabric 解析与客户端渲染各自验收，不能从模拟 `allowed=false` 推断通过。上述命令不运行消光游戏。
 

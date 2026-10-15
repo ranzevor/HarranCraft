@@ -32,10 +32,20 @@ public final class GuestConnections {
         if (!allowed(server)) throw new IllegalStateException("Bridge requires a private integrated server");
         Objects.requireNonNull(input);
         Objects.requireNonNull(output);
+        PipeLink link = new PipeLink(input, output);
+        try { return attach(server, link); }
+        catch (RuntimeException error) { link.close(); throw error; }
+    }
+
+    /** The caller retains the link handle for cancellation and termination verification. */
+    public static Session attach(MinecraftServer server, PipeLink link) {
+        requireThread(server);
+        if (!allowed(server)) throw new IllegalStateException("Bridge requires a private integrated server");
+        Objects.requireNonNull(link);
         detach(server);
         long epoch = EPOCHS.incrementAndGet();
         if (epoch <= 0) throw new IllegalStateException("Session epoch space exhausted");
-        Session session = new Session(epoch, new MinecraftBlocks(server), new PipeLink(input, output), System.nanoTime());
+        Session session = new Session(epoch, new MinecraftBlocks(server), link, System.nanoTime());
         SESSIONS.put(server, session);
         return session;
     }

@@ -39,7 +39,15 @@ public final class ProcessTests {
             }
         }
         World world = new World();
-        Session session = new Session(epoch, world, new PipeLink(process.getInputStream(), process.getOutputStream()), System.nanoTime());
+        PipeLink link = new PipeLink(process.getInputStream(), process.getOutputStream(), () -> {
+            try {
+                if (!process.waitFor(100, TimeUnit.MILLISECONDS)) process.toHandle().destroyForcibly();
+            } catch (InterruptedException error) {
+                process.toHandle().destroyForcibly();
+                Thread.currentThread().interrupt();
+            }
+        });
+        Session session = new Session(epoch, world, link, System.nanoTime());
         world.session = session;
         long deadline = System.nanoTime() + 15_000_000_000L;
         boolean external = false;
@@ -67,6 +75,11 @@ public final class ProcessTests {
             }
             evidence.join(2000);
             if (evidence.isAlive()) throw new AssertionError("Native evidence thread did not terminate");
+            long cleanupDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (!link.isTerminated() && System.nanoTime() < cleanupDeadline) Thread.sleep(1);
+            if (!link.isTerminated() || link.cleanupFailure() != null) {
+                throw new AssertionError("Native pipe cleanup failed", link.cleanupFailure());
+            }
         }
         return epoch;
     }

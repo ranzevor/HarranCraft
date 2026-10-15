@@ -78,7 +78,7 @@ tasks.register('verifyGuestJar') {
         new java.util.zip.ZipFile(remapJar.archiveFile.get().asFile).withCloseable { archive ->
             def names = archive.entries().collect { it.name }
             if (names.any { entry -> entry.startsWith('net/minecraft/') || entry.contains('/test/') ||
-                    ['CoreTests', 'LifecycleTests', 'ProcessTests'].any { testClass ->
+                    ['CoreTests', 'LifecycleTests', 'ProcessTests', 'PipeTests'].any { testClass ->
                         entry.startsWith('io/ranzevor/harrancraft/bridge/' + testClass)
                     } }) {
                 throw new GradleException('Production mod contains game or test classes')

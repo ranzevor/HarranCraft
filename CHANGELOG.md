@@ -16,6 +16,7 @@
 
 ### Changed
 
+- Private-pipe shutdown supports explicit owned-endpoint cancellation, preserves I/O and cleanup failures, and exposes worker termination separately from connection invalidation. Queue handoff rejects reads completing after close. Native fault tests cover saturation, broken and partial pipes, concurrent close and repeated resource retirement.
 - Repository text checks cover Java, C++, Gradle and properties files; generated caches are pruned before traversal. CI Action and permission restrictions remain unchanged.
 - Failed welcomes, replayed receipts and events close the session. Adapter exceptions invalidate it; input and output stream closure are independent. Chunk state reads occur only after thread, mode and subscription checks. Default Fabric builds do not execute Minecraft.
 
@@ -27,6 +28,7 @@ Java/C++ reference frames, controlled process checks and affected lifecycle/tool
 
 ### 未发布变更
 
+- 私有管道关闭支持显式的自有对端取消，保留 I/O 与清理异常，并分别查询连接失效和工作线程结束。关闭后才完成的读取不再进入队列；原生故障测试覆盖饱和、断管、截断、并发关闭及反复资源回收。
 - 新增 Fabric 方块适配源码：服务端线程访问、已加载位置检查、规范状态条件替换及订阅区块变化。
 - 新增版本 1 Java／C++ 协议、私有管道、有界命令排序、回执去重、会话代次及断连恢复。
 - 新增严格原生／Java 测试、受控世界真实跨进程测试、生命周期回归及明确启用的本地服务端／客户端 GameTest 源码。

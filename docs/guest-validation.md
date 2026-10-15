@@ -19,7 +19,7 @@ python tools/package.py
 python tools/test_bridge.py
 ```
 
-The bridge command builds C++ tests, compiles the dependency-free Java protocol core, runs core/lifecycle regressions, compares a complete Java/C++ reference frame and starts actual Java/C++ peers against a controlled world. It does not start Minecraft. Run it on both Linux and the target Windows toolchain.
+The bridge command builds C++ tests, compiles the dependency-free Java protocol core, runs core/lifecycle regressions, compares a complete Java/C++ reference frame and starts actual Java/C++ peers against a controlled world. It also runs `hc-pipe-peer` fault scenarios and checks actual worker/process retirement. Linux descriptor counts are measured through `/proc/self/fd`; an unavailable measurement is reported separately. It does not start Minecraft. Run it on both Linux and the target Windows toolchain.
 
 ## Fabric compilation
 
@@ -43,7 +43,7 @@ Server GameTests check canonical block states and rejection of the isolated Game
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true -PpeerExecutable=../build/bridge/native/hc-bridge-peer runClientGameTest
 ```
 
-For a Windows Visual Studio multi-configuration build, use `-PpeerExecutable=../build/bridge/native/Debug/hc-bridge-peer.exe` instead. The path is resolved relative to `guest/`; use the actual CMake output when selecting a different generator. The client test needs a working graphics session. It checks placement, authoritative server state, an independent block change, removal, stale epochs, invalid versions and disconnect cleanup; it captures empty/placed/removed screenshots. Local GameTest files remain under `guest/build/run` and test reports/screenshots under generated build outputs. Do not point a run directory at an existing save.
+For a Windows Visual Studio multi-configuration build, use `-PpeerExecutable=../build/bridge/native/Debug/hc-bridge-peer.exe` instead. The path is resolved relative to `guest/`; use the actual CMake output when selecting a different generator. The client test needs a working graphics session. It checks placement, authoritative server state, an independent block change, removal, stale epochs, invalid versions and disconnect cleanup with an explicitly owned cancellation callback and transport-termination checks; it captures empty/placed/removed screenshots. Local GameTest files remain under `guest/build/run` and test reports/screenshots under generated build outputs. Do not point a run directory at an existing save.
 
 Record actual command exit codes, source commit, JDK/compiler versions and the selected dependency versions. Preserve failure logs and inspect all three screenshots. Real LAN/mode transitions, Windows execution, complete Fabric resolution and client rendering remain distinct acceptance results; do not infer them from a synthetic `allowed=false` test. No Dying Light game execution is part of these commands.
 
