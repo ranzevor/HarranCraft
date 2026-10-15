@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fixtures import image_bytes
+
 from harrancraft_tools.i18n import catalog, select_language, text
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,9 +24,17 @@ class CLITests(unittest.TestCase):
         self.path.write_bytes(image_bytes())
 
     def command(self, *args: str) -> subprocess.CompletedProcess[str]:
-        env = dict(os.environ, PYTHONPATH=str(ROOT / "src"), PYTHONIOENCODING="utf-8", LANG="en_US.UTF-8")
-        return subprocess.run([sys.executable, "-m", "harrancraft_tools", *args],
-                              capture_output=True, text=True, encoding="utf-8", env=env, timeout=15)
+        env = dict(
+            os.environ, PYTHONPATH=str(ROOT / "src"), PYTHONIOENCODING="utf-8", LANG="en_US.UTF-8"
+        )
+        return subprocess.run(
+            [sys.executable, "-m", "harrancraft_tools", *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env=env,
+            timeout=15,
+        )
 
     def test_process_json_report_and_no_paths(self) -> None:
         result = self.command("--json", "--exports", str(self.path))
@@ -62,7 +71,13 @@ class CLITests(unittest.TestCase):
                 result = self.command(*args)
                 self.assertEqual(result.returncode, 0)
                 self.assertTrue(result.stdout.strip())
-        for args in ((), ("--unknown-private-path",), ("--language",), ("--jso",), tuple([str(self.path)] * 17)):
+        for args in (
+            (),
+            ("--unknown-private-path",),
+            ("--language",),
+            ("--jso",),
+            tuple([str(self.path)] * 17),
+        ):
             with self.subTest(args=args):
                 result = self.command(*args)
                 self.assertEqual(result.returncode, 2)
@@ -77,17 +92,25 @@ class CLITests(unittest.TestCase):
 
     def test_schema_validates_success_failure_and_exports(self) -> None:
         import jsonschema
+
         schema = json.loads((ROOT / "schemas/inspection-v1.schema.json").read_text())
         jsonschema.Draft202012Validator.check_schema(schema)
         for flags in ([], ["--exports"]):
-            result = self.command("--json", *flags, str(self.path), str(self.path.parent / "missing.dll"))
+            result = self.command(
+                "--json", *flags, str(self.path), str(self.path.parent / "missing.dll")
+            )
             jsonschema.validate(json.loads(result.stdout), schema)
 
 
 class LanguageTests(unittest.TestCase):
     def test_language_normalization_and_fallback(self) -> None:
-        for value, expected in (("zh_CN.UTF-8", "zh-CN"), ("zh-Hans", "zh-CN"),
-                                ("en-GB", "en-US"), ("unknown", "en-US"), ("zh-TW", "en-US")):
+        for value, expected in (
+            ("zh_CN.UTF-8", "zh-CN"),
+            ("zh-Hans", "zh-CN"),
+            ("en-GB", "en-US"),
+            ("unknown", "en-US"),
+            ("zh-TW", "en-US"),
+        ):
             with self.subTest(value=value):
                 self.assertEqual(select_language(value), expected)
         with patch.dict(os.environ, {"LC_ALL": "zh_CN.UTF-8", "LANG": "en_US.UTF-8"}, clear=True):
@@ -95,19 +118,26 @@ class LanguageTests(unittest.TestCase):
 
     def test_catalog_keys_and_placeholders(self) -> None:
         from string import Formatter
+
         english, chinese = catalog("en-US"), catalog("zh-CN")
         self.assertEqual(english.keys(), chinese.keys())
         formatter = Formatter()
         for key in english:
+
             def fields(value):
                 return sorted(name for _, name, _, _ in formatter.parse(value) if name is not None)
+
             with self.subTest(key=key):
                 self.assertEqual(fields(english[key]), fields(chinese[key]))
                 self.assertTrue(english[key].strip() and chinese[key].strip())
 
     def test_missing_translation_uses_english(self) -> None:
         original = catalog
+
         def missing(language):
             return {} if language == "zh-CN" else original(language)
+
         with patch("harrancraft_tools.i18n.catalog", side_effect=missing):
-            self.assertEqual(text("error.invalid_pe", "zh-CN"), original("en-US")["error.invalid_pe"])
+            self.assertEqual(
+                text("error.invalid_pe", "zh-CN"), original("en-US")["error.invalid_pe"]
+            )

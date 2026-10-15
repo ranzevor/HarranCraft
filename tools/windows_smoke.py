@@ -27,7 +27,12 @@ def main() -> None:
     get_fn.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p]
     get_fn.restype = wintypes.BOOL
     query_fn = version.VerQueryValueW
-    query_fn.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.UINT)]
+    query_fn.argtypes = [
+        ctypes.c_void_p,
+        wintypes.LPCWSTR,
+        ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(wintypes.UINT),
+    ]
     query_fn.restype = wintypes.BOOL
     ignored = wintypes.DWORD()
     size = size_fn(str(image), ctypes.byref(ignored))
@@ -48,8 +53,16 @@ def main() -> None:
     names = {name for item in report["exports"] for name in item["names"]}
     if "Py_Initialize" not in names or report["kind"] != "dll":
         raise RuntimeError("Python DLL export inspection failed")
-    print(json.dumps({"source": "active CPython DLL", "file_versions": report["file_versions"],
-                      "export_count": report["export_count"], "native_version_comparison": "passed"}))
+    print(
+        json.dumps(
+            {
+                "source": "active CPython DLL",
+                "file_versions": report["file_versions"],
+                "export_count": report["export_count"],
+                "native_version_comparison": "passed",
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

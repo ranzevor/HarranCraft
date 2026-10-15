@@ -190,10 +190,17 @@ class Image:
             self.string(dll_name)
         addresses = (
             struct.unpack(f"<{function_count}I", self.at(functions, function_count * 4))
-            if function_count else ()
+            if function_count
+            else ()
         )
-        name_rvas = struct.unpack(f"<{name_count}I", self.at(names, name_count * 4)) if name_count else ()
-        indices = struct.unpack(f"<{name_count}H", self.at(ordinals, name_count * 2)) if name_count else ()
+        name_rvas = (
+            struct.unpack(f"<{name_count}I", self.at(names, name_count * 4)) if name_count else ()
+        )
+        indices = (
+            struct.unpack(f"<{name_count}H", self.at(ordinals, name_count * 2))
+            if name_count
+            else ()
+        )
         aliases: dict[int, list[str]] = {}
         seen: set[str] = set()
         for name_rva, index in zip(name_rvas, indices, strict=True):
@@ -255,6 +262,7 @@ class Image:
                     version = self._fixed_version(data_rva, data_size)
                     if version is not None:
                         found.add(version)
+
         walk(0, 0)
         return sorted(found)
 
@@ -265,7 +273,12 @@ class Image:
         length, value_length, value_type = struct.unpack_from("<HHH", data)
         key = "VS_VERSION_INFO\0".encode("utf-16-le")
         value_offset = (6 + len(key) + 3) & ~3
-        if length > size or length < value_offset or data[6:6 + len(key)] != key or value_type != 0:
+        if (
+            length > size
+            or length < value_offset
+            or data[6 : 6 + len(key)] != key
+            or value_type != 0
+        ):
             raise InspectionError("invalid_resources")
         if not value_length:
             return None

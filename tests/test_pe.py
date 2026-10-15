@@ -11,8 +11,15 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fixtures import image_bytes
+
 from harrancraft_tools.pe import (
-    CHUNK_BYTES, MAX_FILE_BYTES, MAX_METADATA_BYTES, Image, InspectionError, Reader, inspect_file,
+    CHUNK_BYTES,
+    MAX_FILE_BYTES,
+    MAX_METADATA_BYTES,
+    Image,
+    InspectionError,
+    Reader,
+    inspect_file,
 )
 
 
@@ -41,7 +48,9 @@ class PEInspectionTests(unittest.TestCase):
         self.assertEqual(self.path.read_bytes(), data)
 
     def test_executable_without_exports_or_version(self) -> None:
-        result = self.inspect(image_bytes(dll=False, exports=False, version=False), include_exports=True)
+        result = self.inspect(
+            image_bytes(dll=False, exports=False, version=False), include_exports=True
+        )
         self.assertEqual(result["kind"], "exe")
         self.assertEqual(result["exports"], [])
         self.assertEqual(result["file_versions"], [])
@@ -49,10 +58,13 @@ class PEInspectionTests(unittest.TestCase):
 
     def test_named_and_forwarded_exports(self) -> None:
         result = self.inspect(image_bytes(), include_exports=True)
-        self.assertEqual(result["exports"], [
-            {"ordinal": 1, "rva": 0x1000, "names": ["hc_probe"], "forwarder": None},
-            {"ordinal": 2, "rva": 0x2140, "names": ["hc_sleep"], "forwarder": "KERNEL32.Sleep"},
-        ])
+        self.assertEqual(
+            result["exports"],
+            [
+                {"ordinal": 1, "rva": 0x1000, "names": ["hc_probe"], "forwarder": None},
+                {"ordinal": 2, "rva": 0x2140, "names": ["hc_sleep"], "forwarder": "KERNEL32.Sleep"},
+            ],
+        )
 
     def test_ordinal_only_export(self) -> None:
         data = image_bytes()
@@ -112,13 +124,18 @@ class PEInspectionTests(unittest.TestCase):
 
     def test_section_overlap_and_file_bounds(self) -> None:
         second = 0x98 + 240 + 40
-        for offset, value, code in ((second + 12, 0x1000, "ambiguous_sections"),
-                                    (second + 20, 0x200, "ambiguous_sections"),
-                                    (second + 20, 0x100, "invalid_pe"),
-                                    (second + 20, 0xDFF, "invalid_pe")):
+        for offset, value, code in (
+            (second + 12, 0x1000, "ambiguous_sections"),
+            (second + 20, 0x200, "ambiguous_sections"),
+            (second + 20, 0x100, "invalid_pe"),
+            (second + 20, 0xDFF, "invalid_pe"),
+        ):
             data = image_bytes()
             struct.pack_into("<I", data, offset, value)
-            with self.subTest(offset=offset, value=value), self.assertRaises(InspectionError) as caught:
+            with (
+                self.subTest(offset=offset, value=value),
+                self.assertRaises(InspectionError) as caught,
+            ):
                 self.inspect(data)
             self.assertEqual(caught.exception.code, code)
 
@@ -131,14 +148,16 @@ class PEInspectionTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "unbacked_rva")
 
     def test_export_failures(self) -> None:
-        cases = [(0x414, "<I", 65537, "metadata_limit"),
-                 (0x418, "<I", 65537, "metadata_limit"),
-                 (0x470, "<H", 2, "invalid_exports"),
-                 (0x450, "<I", 0, "invalid_exports"),
-                 (0x450, "<I", 0x9000, "invalid_exports"),
-                 (0x464, "<I", 0x20A0, "invalid_exports"),
-                 (0x4A0, "<B", 27, "invalid_exports"),
-                 (0x410, "<I", 0xFFFFFFFF, "invalid_exports")]
+        cases = [
+            (0x414, "<I", 65537, "metadata_limit"),
+            (0x418, "<I", 65537, "metadata_limit"),
+            (0x470, "<H", 2, "invalid_exports"),
+            (0x450, "<I", 0, "invalid_exports"),
+            (0x450, "<I", 0x9000, "invalid_exports"),
+            (0x464, "<I", 0x20A0, "invalid_exports"),
+            (0x4A0, "<B", 27, "invalid_exports"),
+            (0x410, "<I", 0xFFFFFFFF, "invalid_exports"),
+        ]
         for offset, fmt, value, code in cases:
             data = image_bytes()
             struct.pack_into(fmt, data, offset, value)
@@ -161,12 +180,14 @@ class PEInspectionTests(unittest.TestCase):
             self.inspect(data)
 
     def test_resource_failures(self) -> None:
-        cases = [(0xC14, "<I", 0x80000000, "invalid_resources"),
-                 (0xC14, "<I", 24, "invalid_resources"),
-                 (0xC0E, "<H", 5000, "metadata_limit"),
-                 (0xC80, "<H", 512, "invalid_resources"),
-                 (0xC82, "<H", 51, "invalid_resources"),
-                 (0xCA8, "<I", 0, "invalid_resources")]
+        cases = [
+            (0xC14, "<I", 0x80000000, "invalid_resources"),
+            (0xC14, "<I", 24, "invalid_resources"),
+            (0xC0E, "<H", 5000, "metadata_limit"),
+            (0xC80, "<H", 512, "invalid_resources"),
+            (0xC82, "<H", 51, "invalid_resources"),
+            (0xCA8, "<I", 0, "invalid_resources"),
+        ]
         for offset, fmt, value, code in cases:
             data = image_bytes()
             struct.pack_into(fmt, data, offset, value)
@@ -180,7 +201,10 @@ class PEInspectionTests(unittest.TestCase):
         self.assertEqual(self.inspect(data)["file_versions"], [])
 
     def test_missing_and_directory_inputs(self) -> None:
-        for path, code in ((self.path, "input_unreadable"), (Path(self.temp.name), "not_regular_file")):
+        for path, code in (
+            (self.path, "input_unreadable"),
+            (Path(self.temp.name), "not_regular_file"),
+        ):
             with self.subTest(code=code), self.assertRaises(InspectionError) as caught:
                 inspect_file(path)
             self.assertEqual(caught.exception.code, code)
@@ -214,11 +238,13 @@ class PEInspectionTests(unittest.TestCase):
     def test_concurrent_change_is_rejected(self) -> None:
         self.path.write_bytes(image_bytes())
         original = Image.versions
+
         def mutate(image):
             result = original(image)
             with self.path.open("ab") as stream:
                 stream.write(b"changed")
             return result
+
         with patch.object(Image, "versions", mutate), self.assertRaises(InspectionError) as caught:
             inspect_file(self.path)
         self.assertEqual(caught.exception.code, "input_changed")

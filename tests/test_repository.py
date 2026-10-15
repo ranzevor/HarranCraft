@@ -21,7 +21,12 @@ class RepositoryContractTests(unittest.TestCase):
             (root / "b.md").write_text("# Target\n", encoding="utf-8")
             path.write_text("[link](b.md#target)\n", encoding="utf-8")
             self.assertEqual(check_markdown(path, root), 1)
-            for value in ("[link](b.md#missing)\n", "[link][absent]\n", "[link](missing.md)\n", "[link](../outside.md)\n"):
+            for value in (
+                "[link](b.md#missing)\n",
+                "[link][absent]\n",
+                "[link](missing.md)\n",
+                "[link](../outside.md)\n",
+            ):
                 with self.subTest(value=value):
                     path.write_text(value, encoding="utf-8")
                     with self.assertRaises(ValueError):
@@ -35,8 +40,20 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertEqual(check_markdown(path, root), 0)
 
     def test_ci_refuses_write_permissions_and_unpinned_actions(self) -> None:
-        baseline = {"on": {"pull_request": None, "workflow_dispatch": None}, "permissions": {"contents": "read"},
-                    "jobs": {"checks": {"steps": [{"uses": "actions/checkout@" + "a" * 40, "with": {"persist-credentials": "false"}}]}}}
+        baseline = {
+            "on": {"pull_request": None, "workflow_dispatch": None},
+            "permissions": {"contents": "read"},
+            "jobs": {
+                "checks": {
+                    "steps": [
+                        {
+                            "uses": "actions/checkout@" + "a" * 40,
+                            "with": {"persist-credentials": "false"},
+                        }
+                    ]
+                }
+            },
+        }
         check_workflow(baseline)
         for mutation in ("permissions", "action", "credentials", "trigger"):
             with self.subTest(mutation=mutation):

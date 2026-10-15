@@ -15,16 +15,47 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED = {".git", ".venv", "venv", "build", "dist", "out", "reports", "__pycache__", ".ruff_cache"}
 REQUIRED = {
-    "README.md", "README.zh-CN.md", "LICENSE", "AGENTS.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md",
-    "SECURITY.md", "SUPPORT.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", ".editorconfig",
-    ".gitattributes", ".gitignore", "pyproject.toml", "requirements-dev.txt", "MANIFEST.in",
-    ".github/CODEOWNERS", ".github/pull_request_template.md", ".github/ISSUE_TEMPLATE/config.yml",
-    ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature_request.yml",
-    ".github/ISSUE_TEMPLATE/experiment.yml", ".github/workflows/ci.yml",
-    "schemas/inspection-v1.schema.json", "docs/README.md", "docs/zh-CN/README.md",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md",
+    ".editorconfig",
+    ".gitattributes",
+    ".gitignore",
+    "pyproject.toml",
+    "requirements-dev.txt",
+    "MANIFEST.in",
+    ".github/CODEOWNERS",
+    ".github/pull_request_template.md",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/bug_report.yml",
+    ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/ISSUE_TEMPLATE/experiment.yml",
+    ".github/workflows/ci.yml",
+    "schemas/inspection-v1.schema.json",
+    "docs/README.md",
+    "docs/zh-CN/README.md",
 }
 TEXT_SUFFIXES = {".py", ".md", ".json", ".toml", ".yml", ".yaml", ".txt", ".in", ".typed"}
-BINARY_SUFFIXES = {".exe", ".dll", ".pyd", ".asi", ".obj", ".pdb", ".lib", ".exp", ".whl", ".jar", ".zip"}
+BINARY_SUFFIXES = {
+    ".exe",
+    ".dll",
+    ".pyd",
+    ".asi",
+    ".obj",
+    ".pdb",
+    ".lib",
+    ".exp",
+    ".whl",
+    ".jar",
+    ".zip",
+}
 LINK = re.compile(r"!?\[[^\]\n]*\]\(([^)\n]+)\)")
 REFERENCE = re.compile(r"(?m)^\[([^\]]+)\]:\s*(\S+)")
 USE = re.compile(r"(?<!!)\[[^\]\n]+\]\[([^\]\n]+)\]")
@@ -83,7 +114,9 @@ def check_markdown(path: Path, root: Path = ROOT) -> int:
             continue
         if parsed.scheme or parsed.netloc:
             raise ValueError(f"{path.name}: unsupported link")
-        destination = (path.parent / unquote(parsed.path)).resolve() if parsed.path else path.resolve()
+        destination = (
+            (path.parent / unquote(parsed.path)).resolve() if parsed.path else path.resolve()
+        )
         if not destination.is_relative_to(root.resolve()) or not destination.exists():
             raise ValueError(f"{path.name}: missing local link {target}")
         if parsed.fragment and destination.suffix == ".md":
@@ -95,8 +128,12 @@ def check_markdown(path: Path, root: Path = ROOT) -> int:
 
 def check_catalogs(root: Path = ROOT) -> int:
     base = root / "src/harrancraft_tools/locales"
-    catalogs = [json.loads((base / f"{lang}.json").read_text(encoding="utf-8"), object_pairs_hook=unique_object)
-                for lang in ("en-US", "zh-CN")]
+    catalogs = [
+        json.loads(
+            (base / f"{lang}.json").read_text(encoding="utf-8"), object_pairs_hook=unique_object
+        )
+        for lang in ("en-US", "zh-CN")
+    ]
     if catalogs[0].keys() != catalogs[1].keys():
         raise ValueError("language catalogs have different keys")
     formatter = Formatter()
@@ -106,7 +143,9 @@ def check_catalogs(root: Path = ROOT) -> int:
             value = catalog[key]
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"empty language value: {key}")
-            fields.append(sorted(name for _, name, _, _ in formatter.parse(value) if name is not None))
+            fields.append(
+                sorted(name for _, name, _, _ in formatter.parse(value) if name is not None)
+            )
         if fields[0] != fields[1]:
             raise ValueError(f"placeholder mismatch: {key}")
     return len(catalogs[0])
@@ -161,7 +200,13 @@ def main() -> None:
             continue
         if path.suffix in BINARY_SUFFIXES:
             raise ValueError(f"binary outside ignored output: {path.name}")
-        if path.suffix not in TEXT_SUFFIXES and path.name not in {"LICENSE", "CODEOWNERS", ".gitignore", ".gitattributes", ".editorconfig"}:
+        if path.suffix not in TEXT_SUFFIXES and path.name not in {
+            "LICENSE",
+            "CODEOWNERS",
+            ".gitignore",
+            ".gitattributes",
+            ".editorconfig",
+        }:
             continue
         raw = path.read_bytes()
         value = raw.decode("utf-8")
@@ -187,7 +232,9 @@ def main() -> None:
     keys = check_catalogs()
     schema = json.loads((ROOT / "schemas/inspection-v1.schema.json").read_text())
     jsonschema.Draft202012Validator.check_schema(schema)
-    print(f"Repository checks passed: {checked} text files, {links} local links, {keys} keys per locale")
+    print(
+        f"Repository checks passed: {checked} text files, {links} local links, {keys} keys per locale"
+    )
 
 
 if __name__ == "__main__":

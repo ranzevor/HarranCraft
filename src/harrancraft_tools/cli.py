@@ -64,21 +64,45 @@ def run(arguments: list[str]) -> int:
             results.append({"input_index": index, "status": "inspected", "image": image})
         except InspectionError as exc:
             failed = True
-            results.append({"input_index": index, "status": "error", "error": {
-                "code": exc.code, "message": text(f"error.{exc.code}", language),
-            }})
+            results.append(
+                {
+                    "input_index": index,
+                    "status": "error",
+                    "error": {
+                        "code": exc.code,
+                        "message": text(f"error.{exc.code}", language),
+                    },
+                }
+            )
     if args.json:
-        print(json.dumps({"schema_version": 1, "tool_version": __version__, "results": results},
-                         ensure_ascii=True, indent=2))
+        print(
+            json.dumps(
+                {"schema_version": 1, "tool_version": __version__, "results": results},
+                ensure_ascii=True,
+                indent=2,
+            )
+        )
     else:
         for result in results:
             index = result["input_index"]
             if result["status"] == "error":
-                print(text("input.error", language, index=index, message=result["error"]["message"]), file=sys.stderr)
+                print(
+                    text("input.error", language, index=index, message=result["error"]["message"]),
+                    file=sys.stderr,
+                )
                 continue
             image = result["image"]
-            print(text("input.summary", language, index=index, size=image["file_size"], kind=image["kind"],
-                       sha256=image["sha256"], exports=image["export_count"]))
+            print(
+                text(
+                    "input.summary",
+                    language,
+                    index=index,
+                    size=image["file_size"],
+                    kind=image["kind"],
+                    sha256=image["sha256"],
+                    exports=image["export_count"],
+                )
+            )
             for version in image["file_versions"]:
                 print(text("input.version", language, version=version))
             for export in image.get("exports", []):
