@@ -10,6 +10,14 @@ Generated PE inputs cover EXE/DLL headers, names/ordinals/forwarders/aliases, fi
 
 Schema validation uses the declared JSON Schema dialect and accepts both success and failure entries. CLI tests use real subprocesses and verify exit codes, output streams and omission of file paths. Packaging tests prevent the runtime wheel from carrying tests, binaries or private inputs.
 
+## Bridge and guest checks
+
+`python tools/test_bridge.py` compiles C++ with strict warnings and Java with `--release 21 -Xlint:all -Werror`, runs the wire/core/lifecycle suites, compares the complete 512-byte reference frame, and exercises three actual Java/C++ pipe scenarios against a controlled world. It checks command ordering, receipt replay/conflicts, generations, capacities, failed sends and cleanup. It does not instantiate Minecraft.
+
+`python tools/gradle.py build` is the separate Fabric compilation and JAR-inventory check. GameTest source is compiled by that build; execution requires explicit opt-in properties and local conditions described in [Local guest validation](guest-validation.md). Server tests cover canonical states and endpoint refusal; client tests cover an integrated world, real chunk observation, an independent state change, removal and screenshots. Complete Fabric builds, game tests, real mode transitions and target Windows results are separate acceptance records.
+
+Ruff remains a required repository check. Bootstrap tests use synthetic archives and mocked downloads; they cannot establish that Maven resolution or a Gradle task graph succeeds. No automatic workflow accepts a Minecraft EULA or starts game tests.
+
 ## Evidence levels
 
 | Level | What it establishes | What it does not establish |

@@ -19,11 +19,15 @@ HarranCraft 是将真实 Minecraft 运行时与《消逝的光芒 1》融合的�
 | 固定文件版本资源读取 | 已实现 |
 | 英文／简体中文命令行及带版本号的 JSON 报告 | 已实现 |
 | 损坏输入、内存上界和安装包 CLI 测试 | 已纳入验证入口 |
-| 消光宿主适配器及真实 Fabric 客体 | 尚未实现 |
+| Java／C++ 桥接协议及私有管道 | 受控世界及真实跨进程测试通过 |
+| Fabric 方块读取、条件修改及变化观察 | 源码已实现；Fabric 构建及游戏测试尚未运行 |
+| 消光宿主适配器 | 尚未实现 |
 | 游戏内遮挡、原生方块碰撞、伤害与 TNT | 尚未实现或实机验证 |
 | 可玩发行包或安装器 | 尚未提供 |
 
-核查工具识别文件内容，**不加载 DLL、不挂钩游戏、不安装模组、不修改存档，也不将某个游戏版本判定为兼容**。宿主与客体开发仍属于[完整路线图](docs/zh-CN/roadmap.md)，该工具不替代融合目标。
+核查工具识别文件内容，**不加载 DLL、不挂钩游戏、不安装模组、不修改存档，也不将某个游戏版本判定为兼容**。[完整路线图](docs/zh-CN/roadmap.md)继续保留完整双运行时融合目标。
+
+H2-A 提供接收调用方自有私有管道的 Fabric 嵌入接口、已加载位置读取、条件方块替换及订阅变化事件。当前没有最终用户启动器或消光端点。[桥接契约](docs/zh-CN/bridge.md) · [本地验证](docs/zh-CN/guest-validation.md)
 
 ## 使用核查工具
 
@@ -57,9 +61,17 @@ python tools/package.py
 
 [CI](https://github.com/ranzevor/HarranCraft/actions/workflows/ci.yml)在 PR 和手动运行时执行 Ubuntu 与 Windows 检查，结果对应实际源码版本，不能代替游戏内兼容验证。[开发指南](docs/zh-CN/development.md) · [兼容范围](docs/zh-CN/compatibility.md) · [验证分层](docs/testing.md)
 
+已安装 JDK 21、CMake 3.25+ 及 C++20 编译器时，可运行不依赖游戏的 Java／C++ 检查：
+
+```console
+python tools/test_bridge.py
+```
+
+Fabric 配置版本及明确的本地构建／GameTest 命令见[本地验证](docs/zh-CN/guest-validation.md)。游戏测试默认关闭，不纳入 CI。
+
 ## 融合设计
 
-计划中的原生宿主适配器与 Fabric 客体通过带版本号的协议交换世界、输入和玩法事件。渲染与物理交互分别验收：画面对齐不等于深度遮挡，客体碰撞不等于宿主原生障碍物。
+已实现的客体桥接通过带版本号的协议与原生测试进程交换方块命令和事件；计划中的宿主适配器继续扩展原生世界交互、输入和玩法事件。渲染与物理交互分别验收：画面对齐不等于深度遮挡，客体碰撞不等于宿主原生障碍物。
 
 修改宿主前必须识别具体程序版本、正向确认单人会话，并验证引擎安全执行阶段。状态未知或不可用时拒绝修改。可玩发布前，必须在原版游戏中验证相机与深度对应、碰撞所有权及双向伤害。
 
@@ -70,6 +82,9 @@ python tools/package.py
 | 位置 | 用途 |
 | --- | --- |
 | `src/harrancraft_tools/` | 只读核查工具与语言资源 |
+| `guest/` | Fabric 端点、协议核心及隔离 GameTest 源码 |
+| `include/harrancraft/wire.hpp` | 原生 wire 布局权威 |
+| `native/tests/` | C++ 契约测试与私有管道测试进程 |
 | `schemas/` | 机器可读报告契约 |
 | `tests/` | 动态生成的输入样本及回归测试 |
 | `tools/` | 仓库、构建和安装包 CLI 验证 |

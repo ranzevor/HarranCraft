@@ -1,6 +1,6 @@
 include LICENSE THIRD_PARTY_NOTICES.md README.md README.zh-CN.md
 include AGENTS.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md SUPPORT.md CHANGELOG.md
-include pyproject.toml requirements-dev.txt
+include pyproject.toml requirements-dev.txt CMakeLists.txt
 include .editorconfig .gitattributes .gitignore
 recursive-include docs *.md
 recursive-include schemas *.json
@@ -8,4 +8,12 @@ recursive-include tools *.py
 recursive-include tests *.py
 recursive-include src *.py *.json py.typed
 recursive-include .github *.yml *.md CODEOWNERS
+recursive-include guest *.java *.json *.gradle *.properties
+recursive-include include *.hpp
+recursive-include native *.cpp
+prune guest/build
+prune guest/.gradle
+prune guest/run
+prune guest/runClientGameTest
+prune guest/runGameTest
 global-exclude *.py[cod]

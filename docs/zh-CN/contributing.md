@@ -12,7 +12,7 @@ python tools/verify.py
 python tools/package.py
 ```
 
-单项检查见[开发指南](development.md)。生成物放入忽略的输出目录；当前测试不需要游戏，不将游戏文件上传 Issue 或 CI。
+单项检查见[开发指南](development.md)。生成物放入忽略的输出目录；核查工具及受控桥接测试不需要游戏，真实 Fabric 测试使用独立[本地验证入口](guest-validation.md)；不将游戏文件上传 Issue 或 CI。
 
 从最新 main 建立聚焦分支，提交主题使用 `type: imperative summary`，例如 `fix: reject overlapping PE sections`；类型包括 `feat`、`fix`、`docs`、`test`、`refactor`、`build`、`chore`。记录实际变更，不写任务流水或未经验证的能力。
 

@@ -3,7 +3,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.check_repository import anchors, check_markdown, check_workflow, unique_object
+from tools.check_repository import (
+    anchors,
+    check_markdown,
+    check_workflow,
+    read_source,
+    source_files,
+    unique_object,
+)
 
 
 class RepositoryContractTests(unittest.TestCase):
@@ -68,3 +75,62 @@ class RepositoryContractTests(unittest.TestCase):
                     candidate["on"]["schedule"] = []
                 with self.assertRaises(ValueError):
                     check_workflow(candidate)
+
+    def test_bridge_source_text_is_checked(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for suffix in (".java", ".cpp", ".hpp", ".gradle", ".properties", ".cmake"):
+                path = root / ("source" + suffix)
+                with self.subTest(suffix=suffix):
+                    path.write_bytes(b"valid\n")
+                    self.assertEqual(read_source(path), "valid\n")
+                    for invalid in (
+                        b"bom\r\n",
+                        b"missing newline",
+                        b"space \n",
+                        b"\xef\xbb\xbftext\n",
+                    ):
+                        path.write_bytes(invalid)
+                        with self.assertRaises(ValueError):
+                            read_source(path)
+
+    def test_java_and_native_outputs_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            for suffix in (".class", ".jar", ".exe", ".o", ".so", ".dylib"):
+                path = Path(temporary) / ("output" + suffix)
+                path.write_bytes(b"output")
+                with self.subTest(suffix=suffix), self.assertRaises(ValueError):
+                    read_source(path)
+
+    def test_game_and_toolchain_caches_are_pruned(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            excluded = (
+                "build/toolchains/gradle/bin/gradle.jar",
+                "guest/.gradle/cache/entry.class",
+                "guest/build/classes/Main.class",
+                "guest/run/level.dat",
+                "guest/runClientGameTest/level.dat",
+                "guest/runGameTest/level.dat",
+            )
+            included = ("guest/build.gradle", "guest/src/Main.java", "native/run/source.cpp")
+            for name in (*excluded, *included):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("source\n", encoding="utf-8")
+            self.assertEqual(
+                {path.relative_to(root).as_posix() for path in source_files(root)}, set(included)
+            )
+
+    def test_additional_actions_and_job_permissions_remain_rejected(self) -> None:
+        for action in ("setup-java", "upload-artifact", "unreviewed"):
+            data = {
+                "on": {"pull_request": None, "workflow_dispatch": None},
+                "permissions": {"contents": "read"},
+                "jobs": {"checks": {"steps": [{"uses": f"actions/{action}@" + "a" * 40}]}},
+            }
+            with self.subTest(action=action), self.assertRaises(ValueError):
+                check_workflow(data)
+        data["jobs"]["checks"] = {"permissions": {"contents": "write"}, "steps": []}
+        with self.assertRaises(ValueError):
+            check_workflow(data)

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "harrancraft",
+  "version": "${version}",
+  "name": "HarranCraft",
+  "description": "Minecraft guest endpoint for HarranCraft dual-runtime integration.",
+  "authors": ["Ranzevor"],
+  "contact": {"sources": "https://github.com/ranzevor/HarranCraft", "issues": "https://github.com/ranzevor/HarranCraft/issues"},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {"main": ["io.ranzevor.harrancraft.HarranCraft"]},
+  "mixins": ["harrancraft.mixins.json"],
+  "depends": {"fabricloader": ">=0.16.14", "minecraft": "1.21.4", "java": ">=21", "fabric-api": ">=0.119.4+1.21.4"}
+}

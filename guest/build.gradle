@@ -1,0 +1,98 @@
+plugins {
+    id 'fabric-loom' version '1.11.8'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+repositories { mavenCentral() }
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+    options.compilerArgs += ['-Xlint:all,-processing', '-Werror']
+}
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand version: project.version }
+}
+jar {
+    from('../LICENSE') { rename { 'LICENSE_HarranCraft' } }
+}
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+def runMinecraftTests = providers.gradleProperty('runMinecraftTests')
+        .map { it == 'true' }.getOrElse(false)
+def acceptMinecraftEula = providers.gradleProperty('acceptMinecraftEula')
+        .map { it == 'true' }.getOrElse(false)
+if (runMinecraftTests && !acceptMinecraftEula) {
+    throw new GradleException('Game tests require explicit Minecraft EULA acceptance')
+}
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'harrancraft-gametest'
+        enableGameTests = runMinecraftTests
+        enableClientGameTests = runMinecraftTests
+        eula = runMinecraftTests && acceptMinecraftEula
+    }
+}
+
+tasks.register('coreTest', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.ranzevor.harrancraft.bridge.CoreTests'
+}
+tasks.register('lifecycleTest', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.ranzevor.harrancraft.bridge.LifecycleTests'
+}
+check.dependsOn coreTest, lifecycleTest, tasks.named('gametestClasses')
+
+def peerFile = providers.gradleProperty('peerExecutable')
+loom.runs.configureEach {
+    if (name.toLowerCase().contains('test') && peerFile.isPresent()) {
+        property 'harrancraft.test.peer', file(peerFile.get()).absolutePath
+    }
+}
+
+tasks.register('verifyGuestJar') {
+    dependsOn remapJar
+    doLast {
+        new java.util.zip.ZipFile(remapJar.archiveFile.get().asFile).withCloseable { archive ->
+            def names = archive.entries().collect { it.name }
+            if (names.any { entry -> entry.startsWith('net/minecraft/') || entry.contains('/test/') ||
+                    ['CoreTests', 'LifecycleTests', 'ProcessTests'].any { testClass ->
+                        entry.startsWith('io/ranzevor/harrancraft/bridge/' + testClass)
+                    } }) {
+                throw new GradleException('Production mod contains game or test classes')
+            }
+            for (def required : ['fabric.mod.json', 'harrancraft.mixins.json', 'LICENSE_HarranCraft',
+                    'io/ranzevor/harrancraft/GuestConnections.class',
+                    'io/ranzevor/harrancraft/mixin/WorldChunkMixin.class']) {
+                if (!names.contains(required)) throw new GradleException('Missing mod entry: ' + required)
+            }
+            def manifest = new groovy.json.JsonSlurper().parse(archive.getInputStream(archive.getEntry('fabric.mod.json')))
+            if (manifest.id != 'harrancraft' || manifest.entrypoints.containsKey('fabric-gametest')) {
+                throw new GradleException('Production mod has incorrect entrypoints')
+            }
+        }
+    }
+}
+check.dependsOn verifyGuestJar

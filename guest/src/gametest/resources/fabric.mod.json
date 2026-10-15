@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "harrancraft-gametest",
+  "version": "1.0.0",
+  "name": "HarranCraft Game Tests",
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": ["io.ranzevor.harrancraft.test.ServerTests"],
+    "fabric-client-gametest": ["io.ranzevor.harrancraft.test.ClientTests"]
+  }
+}

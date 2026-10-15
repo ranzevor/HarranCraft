@@ -2,15 +2,17 @@
 
 [简体中文](zh-CN/architecture.md) · [Documentation](README.md)
 
-## Delivered component
+## Implemented components
 
 `hc-inspect` is an offline development tool. Its data flow is explicit file argument → bounded PE parsing and streaming hash → versioned report. Inputs are read-only; reports carry input positions rather than paths. The parser does not participate in the game process or grant permission for a native callback.
+
+The H2-A source adds a Fabric block adapter, chunk-change observation, a Java session/transport core and an independent C++ test peer. Controlled process tests exercise the wire and lifecycle; the Fabric build and real GameTests remain unrun. The embedding API accepts caller-owned private pipes; it does not provide a user launcher. [Block bridge contract](bridge.md)
 
 ## Planned runtime boundary
 
 The native Dying Light 1 adapter owns host object identities, original-world queries, camera/depth acquisition and accepted engine calls. A real Fabric guest owns Minecraft inventory, blocks, items and Minecraft simulation. A bridge transports versioned snapshots and commands; it is not a second independent authority over either game's health or objects.
 
-The native adapter is expected to use a Windows x64 toolchain; the concrete runtime and Minecraft/Fabric/JDK versions are selected alongside working integrations. Garry's Mod is not a component. Native geometry submission and a depth-aware GPU compositor remain competing experiments until host evidence selects a route.
+The native adapter is expected to use a Windows x64 toolchain; the guest has a pinned candidate toolchain listed in [compatibility](compatibility.md), pending complete dependency resolution and game validation. Garry's Mod is not a component. Native geometry submission and a depth-aware GPU compositor remain competing experiments until host evidence selects a route.
 
 | State or operation | Authority and acceptance |
 | --- | --- |
@@ -23,11 +25,13 @@ The native adapter is expected to use a Windows x64 toolchain; the concrete runt
 
 ## Wire and execution requirements
 
-When the first native producer and Fabric consumer are introduced, `include/harrancraft/wire.hpp` will be the single native wire-layout authority with a validated matching Java implementation. That file and ABI are not present in the inspector-only baseline. HarranCraft mappings must not reuse a reference project's mapping name or assume its layout.
+`include/harrancraft/wire.hpp` defines the implemented version 1, 512-byte little-endian protocol. Java `Frame` matches its encoding and strict validation; reference-frame and real-process tests cover the controlled endpoints. HarranCraft mappings must not reuse a reference project's mapping name or assume its layout.
 
 Every game-facing event needs an origin, session generation, unique event identity and applicable target lifetime. Bound queues and work per update; define saturation and acknowledgements. Reconnection cannot replay an old session's damage or resurrect removed collision resources. A protocol break requires a version change and producer/consumer refusal or migration behavior.
 
 Host modification is gated by accepted image fingerprints, a positively identified single-player session and a verified engine-safe callback phase. Unknown or disallowed states invalidate the mutation path. Rendering callbacks and window messages are observation candidates, not automatically safe mutation points. No blocking wait, filesystem work or synchronous GPU readback belongs in a game mutation callback.
+
+H2-A authorizes only Minecraft block operations. Server-thread mode checks precede access and revoke active sessions when disallowed. Stream workers never perform world access. The chunk callback observes actual changes; failed event/receipt delivery invalidates the session rather than replaying mutations. New-epoch snapshots are required after disconnect, because a committed Minecraft change is not automatically rolled back when its acknowledgement fails. Host collision acknowledgement and cross-runtime rollback in the table above remain future integration contracts.
 
 ## Core experiments
 

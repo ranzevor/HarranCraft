@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "io.ranzevor.harrancraft.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["WorldChunkMixin"],
+  "injectors": {"defaultRequire": 1}
+}

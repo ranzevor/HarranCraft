@@ -8,6 +8,8 @@
 | 构建、格式化及运行测试 | [开发指南](development.md) |
 | 区分实际能力与目标平台 | [兼容范围](compatibility.md) |
 | 理解状态归属与融合边界 | [架构](architecture.md) |
+| 接入私有管道对端及处理恢复 | [方块桥接](bridge.md) |
+| 构建 Fabric 客体与运行隔离游戏测试 | [客体本地验证](guest-validation.md) |
 | 跟踪完整玩法目标 | [路线图](roadmap.md) |
 | 参与贡献 | [贡献指南](contributing.md) |
 | 区分测试证据层级 | [验证模型](../testing.md) |

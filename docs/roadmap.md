@@ -14,8 +14,12 @@ Milestones describe required outcomes rather than a release schedule. Work indep
 | H5 — Playable systems | Input return, inventory, items, building and creatures | End-to-end play through both original runtimes with resource/performance measurements |
 | H6 — Persistence and delivery | Persistent bridge state, installation, upgrade, removal and exit recovery | Disposable test data, compatibility/recovery evidence and a separately approved release |
 
-## Next independent work
+## H2 acceptance sequence
 
-Implement the Fabric endpoint and native observation experiments as separate, testable workstreams. Select Minecraft/Fabric/JDK versions from actual dependency resolution and launch evidence. Keep game-changing code disabled until its mode and execution-phase checks have real evidence, while continuing source, protocol and guest tests in isolated environments.
+**H2-A — Block events and bidirectional IPC:** source implementation and controlled Java/C++ process tests are available. Complete [local validation](guest-validation.md): pinned dependency resolution, Fabric compilation, server/client GameTests, Windows execution, screenshots and real mode transitions. The guest accepts embedded private pipes; a user launcher and Dying Light endpoint are not part of this batch.
+
+**H2-B — Real guest graphics output:** follows genuine H2-A results. Produce real Minecraft render/geometry output with camera, frame and lifetime identity; subsequent H3 must establish original-world occlusion and native collision.
+
+H1 observation experiments remain independently testable. Keep host-changing code gated by actual build, mode and engine-phase evidence. Continue source and protocol work without waiting for an unrelated game environment.
 
 The long-term scope remains full dual-runtime fusion. Replacing models/textures, window overlays and guest-only interactions cannot satisfy H3–H6.
