@@ -4,6 +4,7 @@
 
 ### Added
 
+- Local validation preflight, source fingerprints, invocation deadlines, owned-process cleanup and versioned per-stage reports in the existing bridge and Gradle entry points. New or changed game-test evidence is collected without reusing unchanged screenshots.
 - Read-only AMD64 PE32+ inspector with streaming SHA-256, section and export metadata, and fixed file versions.
 - Versioned JSON report schema, input-index reporting, bounded malformed-input handling and English/简体中文 CLI resources.
 - Generated PE regressions, CLI subprocess checks and isolated wheel-install verification.
@@ -28,6 +29,7 @@ Java/C++ reference frames, controlled process checks and affected lifecycle/tool
 
 ### 未发布变更
 
+- 在现有桥接与 Gradle 入口新增本地预检、源码指纹、整次时限、自有进程清理及带版本号的分阶段报告；收集新增或变化的游戏测试证据，不复用未变化的旧截图。
 - 私有管道关闭支持显式的自有对端取消，保留 I/O 与清理异常，并分别查询连接失效和工作线程结束。关闭后才完成的读取不再进入队列；原生故障测试覆盖饱和、断管、截断、并发关闭及反复资源回收。
 - 新增 Fabric 方块适配源码：服务端线程访问、已加载位置检查、规范状态条件替换及订阅区块变化。
 - 新增版本 1 Java／C++ 协议、私有管道、有界命令排序、回执去重、会话代次及断连恢复。

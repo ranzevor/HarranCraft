@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import re
 import stat
-import subprocess
 import sys
 import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path, PurePosixPath
+
+if __package__:
+    from .validation import Validation, collect_evidence, digest, entry, evidence_snapshot
+else:
+    from validation import Validation, collect_evidence, digest, entry, evidence_snapshot
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "8.14.3"
@@ -108,13 +114,158 @@ def prepare() -> Path:
     return executable
 
 
+def validate(check: Validation, arguments: list[str]) -> None:
+    if not arguments:
+        arguments = ["build"]
+    for argument in arguments:
+        if argument in {
+            "--project-dir",
+            "--init-script",
+            "--include-build",
+            "-c",
+            "--settings-file",
+            "-b",
+            "--build-file",
+        } or argument.startswith(
+            (
+                "-p",
+                "-I",
+                "-b",
+                "-c",
+                "--project-dir=",
+                "--init-script=",
+                "--include-build=",
+                "--settings-file=",
+                "--build-file=",
+            )
+        ):
+            check.reject("validation_project_override_rejected")
+    tasks = {
+        value.rsplit(":", 1)[-1]
+        for value in arguments
+        if re.fullmatch(r":?[A-Za-z][A-Za-z0-9_:.-]*", value)
+    }
+    if any(value in {"-m", "--dry-run"} for value in arguments):
+        check.reject("validation_dry_run_rejected")
+    allowed_tasks = {"build", "check", "test", "clean", "runGameTest", "runClientGameTest"}
+    if not tasks or tasks - allowed_tasks or tasks == {"clean"}:
+        check.reject("validation_task_unsupported")
+    if any(value == "-x" or value.startswith(("-x", "--exclude-task")) for value in arguments):
+        check.reject("validation_task_exclusion_rejected")
+    enabled = "-PrunMinecraftTests=true" in arguments
+    game = enabled or bool(tasks & {"runGameTest", "runClientGameTest"})
+    client = "runClientGameTest" in tasks or (enabled and bool(tasks & {"build", "check", "test"}))
+    check.report["requested_tasks"] = sorted(tasks)
+    check.report["minecraft_execution"] = game
+    if game and not (enabled and "-PacceptMinecraftEula=true" in arguments):
+        check.reject("minecraft_opt_in_required")
+    check.preflight(("java", "javac"))
+    properties = {}
+    for line in (ROOT / "guest/gradle.properties").read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            key, value = line.split("=", 1)
+            if key.strip() in {
+                "minecraft_version",
+                "yarn_mappings",
+                "loader_version",
+                "fabric_version",
+            }:
+                if not re.fullmatch(r"[0-9][0-9A-Za-z.+_-]{0,99}", value.strip()):
+                    check.reject("configured_dependency_invalid")
+                properties[key.strip()] = value.strip()
+    check.report["configured_dependencies"] = properties | {
+        "gradle": VERSION,
+        "gradle_sha256": SHA256,
+    }
+    if client:
+        check.report["graphics_session"] = (
+            "configured" if os.name == "nt" or os.environ.get("DISPLAY") else "missing"
+        )
+        if check.report["graphics_session"] == "missing":
+            check.reject("client_graphics_session_missing")
+        peers = [
+            value.partition("=")[2] for value in arguments if value.startswith("-PpeerExecutable=")
+        ]
+        if len(peers) != 1:
+            check.reject("native_peer_required")
+        peer = (ROOT / "guest" / peers[0]).resolve()
+        if not peer.is_file() or (os.name != "nt" and not os.access(peer, os.X_OK)):
+            check.reject("native_peer_unavailable")
+        check.report["peer_sha256"] = digest(peer, 32 * 1024 * 1024)
+    cache = ROOT / "build/toolchains" / f"gradle-{VERSION}"
+    if cache.is_symlink() or not cache.resolve().is_relative_to(ROOT):
+        check.reject("gradle_cache_link_rejected")
+    check.report["gradle_cache"] = "present" if cache.is_dir() else "missing"
+    check.save()
+    if check.settings["preflight"]:
+        return
+    check.acquire()
+    before = evidence_snapshot(ROOT)
+    try:
+        bootstrap = check.run(
+            "bootstrap",
+            [sys.executable, "-S", str(Path(__file__).resolve()), "--_hc-bootstrap"],
+            limit=300,
+        )
+        executable = json.loads(bootstrap)["executable"]
+        check.run(
+            "gradle",
+            [executable, "-p", str(ROOT / "guest"), *arguments, "--no-daemon", "--console=plain"],
+            limit=86400,
+        )
+    finally:
+        stage = next(item for item in check.report["stages"] if item["name"] == "evidence")
+        stage["status"] = "running"
+        check.save()
+        try:
+            stage.update(collect_evidence(ROOT, check.directory, before, screenshots=client))
+        except (OSError, ValueError) as error:
+            stage.update(
+                status="failed",
+                reason="evidence_collection_failed",
+                error_type=type(error).__name__,
+            )
+        log = check.directory / "gradle.stdout.log"
+        if log.is_file():
+            with log.open("rb") as stream:
+                raw = stream.read(32 * 1024 * 1024 + 1)
+            if len(raw) > 32 * 1024 * 1024:
+                raise ValueError("gradle_log_scan_limit_exceeded")
+            text = raw.decode("utf-8", errors="replace")
+            check.report["gradle_task_results"] = [
+                {"task": task, "outcome": outcome or "executed"}
+                for task, outcome in re.findall(
+                    r"(?m)^> Task (:[^\s]+)(?: (FAILED|UP-TO-DATE|SKIPPED|FROM-CACHE|NO-SOURCE))?\s*$",
+                    text,
+                )
+            ]
+            failed = [
+                value["task"]
+                for value in check.report["gradle_task_results"]
+                if value["outcome"] == "FAILED"
+            ]
+            check.report["gradle_failed_tasks"] = failed
+            executed = {
+                value["task"].rsplit(":", 1)[-1]
+                for value in check.report["gradle_task_results"]
+                if value["outcome"] == "executed"
+            }
+            required_game_tasks = tasks & {"runGameTest", "runClientGameTest"}
+            if enabled and tasks & {"build", "check", "test"}:
+                required_game_tasks = {"runGameTest", "runClientGameTest"}
+            check.report["unexecuted_game_tasks"] = sorted(required_game_tasks - executed)
+            if required_game_tasks - executed and check.report["status"] == "running":
+                check.report.update(status="failed", reason="game_task_not_executed")
+        check.save()
+    if stage["status"] != "passed":
+        check.reject("required_evidence_missing", "failed")
+
+
 def main() -> int:
-    executable = prepare()
-    return subprocess.run(
-        [str(executable), "--no-daemon", "-p", str(ROOT / "guest"), *sys.argv[1:]],
-        cwd=ROOT,
-        check=False,
-    ).returncode
+    if sys.argv[1:] == ["--_hc-bootstrap"]:
+        print(json.dumps({"executable": str(prepare())}))
+        return 0
+    return entry(ROOT, "fabric", sys.argv[1:], 1800, ["bootstrap", "gradle", "evidence"], validate)
 
 
 if __name__ == "__main__":

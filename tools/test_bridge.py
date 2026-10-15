@@ -3,48 +3,100 @@
 from __future__ import annotations
 
 import os
-import subprocess
+import re
+import sys
 from pathlib import Path
+
+if __package__:
+    from .validation import Validation, entry
+else:
+    from validation import Validation, entry
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "build" / "bridge"
 PACKAGE = "io.ranzevor.harrancraft.bridge"
+STAGES = [
+    "configure",
+    "native-build",
+    "native-tests",
+    "java-build",
+    "core-tests",
+    "lifecycle-tests",
+    "native-frame",
+    "java-frame",
+    "frame-comparison",
+    "process-tests",
+    "pipe-tests",
+]
 
 
-def run(*command: str, capture: bool = False) -> str:
-    result = subprocess.run(
-        list(command), cwd=ROOT, check=True, timeout=120, capture_output=capture, text=True
-    )
-    return result.stdout if capture else ""
-
-
-def main() -> None:
-    native = BUILD / "native"
-    java = BUILD / "java"
+def validate(check: Validation, arguments: list[str]) -> None:
+    if arguments:
+        check.reject("unexpected_bridge_argument")
+    check.preflight(("cmake", "ctest", "java", "javac"))
+    if check.settings["preflight"]:
+        return
+    check.acquire()
+    native, java = BUILD / "native", BUILD / "java" / check.directory.name
+    for directory in (native, java):
+        if directory.is_symlink() or not directory.resolve().is_relative_to(ROOT):
+            check.reject("build_directory_link_rejected")
     java.mkdir(parents=True, exist_ok=True)
-    run("cmake", "-S", ".", "-B", str(native), "-DCMAKE_BUILD_TYPE=Debug")
-    run("cmake", "--build", str(native), "--config", "Debug", "--parallel", "2")
-    run("ctest", "--test-dir", str(native), "-C", "Debug", "--output-on-failure")
+    check.run("configure", ["cmake", "-S", ".", "-B", str(native), "-DCMAKE_BUILD_TYPE=Debug"])
+    check.run(
+        "native-build", ["cmake", "--build", str(native), "--config", "Debug", "--parallel", "2"]
+    )
+    check.run(
+        "native-tests", ["ctest", "--test-dir", str(native), "-C", "Debug", "--output-on-failure"]
+    )
     bridge = Path("io/ranzevor/harrancraft/bridge")
     sources = [
         str(path)
         for directory in ("main", "test")
         for path in sorted((ROOT / "guest/src" / directory / "java" / bridge).glob("*.java"))
     ]
-    run("javac", "--release", "21", "-Xlint:all", "-Werror", "-d", str(java), *sources)
-    run("java", "-cp", str(java), f"{PACKAGE}.CoreTests")
-    run("java", "-cp", str(java), f"{PACKAGE}.LifecycleTests")
+    if not sources:
+        check.reject("bridge_sources_missing")
+    check.run(
+        "java-build",
+        ["javac", "--release", "21", "-Xlint:all", "-Werror", "-d", str(java), *sources],
+    )
+    check.run("core-tests", ["java", "-cp", str(java), f"{PACKAGE}.CoreTests"])
+    check.run("lifecycle-tests", ["java", "-cp", str(java), f"{PACKAGE}.LifecycleTests"])
     bin_dir = native / "Debug" if (native / "Debug").is_dir() else native
     extension = ".exe" if os.name == "nt" else ""
     peer = bin_dir / f"hc-bridge-peer{extension}"
-    golden = run(str(bin_dir / f"hc-wire-test{extension}"), "--golden", capture=True)
-    java_golden = run("java", "-cp", str(java), f"{PACKAGE}.CoreTests", "--golden", capture=True)
-    if golden.strip() != java_golden.strip():
-        raise ValueError("Java/C++ golden frames differ")
-    run("java", "-cp", str(java), f"{PACKAGE}.ProcessTests", str(peer))
-    run("java", "-cp", str(java), f"{PACKAGE}.PipeTests", str(bin_dir / f"hc-pipe-peer{extension}"))
-    print("bridge-contract: passed (controlled world and native pipe faults)")
+    golden = check.run("native-frame", [str(bin_dir / f"hc-wire-test{extension}"), "--golden"])
+    java_golden = check.run(
+        "java-frame", ["java", "-cp", str(java), f"{PACKAGE}.CoreTests", "--golden"]
+    )
+    comparison = next(
+        stage for stage in check.report["stages"] if stage["name"] == "frame-comparison"
+    )
+    comparison["status"] = (
+        "passed"
+        if re.fullmatch(r"[0-9a-f]{1024}", golden.strip()) and golden.strip() == java_golden.strip()
+        else "failed"
+    )
+    check.save()
+    if comparison["status"] == "failed":
+        check.reject("wire_frame_mismatch", "failed")
+    check.run("process-tests", ["java", "-cp", str(java), f"{PACKAGE}.ProcessTests", str(peer)])
+    check.run(
+        "pipe-tests",
+        [
+            "java",
+            "-cp",
+            str(java),
+            f"{PACKAGE}.PipeTests",
+            str(bin_dir / f"hc-pipe-peer{extension}"),
+        ],
+    )
+
+
+def main() -> int:
+    return entry(ROOT, "bridge", sys.argv[1:], 600, STAGES, validate)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

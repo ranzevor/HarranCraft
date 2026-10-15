@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ranzevor/HarranCraft/schemas/validation-v1.schema.json",
+  "title": "HarranCraft local validation result",
+  "type": "object",
+  "required": ["schema_version", "component", "status", "started_at", "platform", "source", "tools", "preflight", "stages"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "component": {"type": "string", "minLength": 1},
+    "status": {"enum": ["running", "passed", "failed", "blocked", "timed_out", "interrupted", "incomplete", "preflight_passed"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "finished_at": {"type": "string", "format": "date-time"},
+    "platform": {
+      "type": "object",
+      "required": ["system", "machine", "python"],
+      "properties": {"system": {"type": "string"}, "machine": {"type": "string"}, "python": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "source": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/source"}]},
+    "source_after": {"$ref": "#/$defs/source"},
+    "tools": {"type": "object"},
+    "preflight": {"enum": ["not_run", "running", "passed", "blocked", "failed", "timed_out"]},
+    "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}}
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["revision", "tree", "snapshot_sha256", "file_count", "dirty"],
+      "properties": {
+        "revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "tree": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "snapshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "file_count": {"type": "integer", "minimum": 0},
+        "dirty": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "stage": {
+      "type": "object",
+      "required": ["name", "status"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "status": {"enum": ["not_run", "running", "passed", "failed", "blocked", "timed_out", "interrupted"]},
+        "exit_code": {"type": ["integer", "null"]},
+        "cleanup": {"enum": ["not_run", "pending", "passed", "failed"]},
+        "elapsed_seconds": {"type": "number", "minimum": 0},
+        "stdout": {"type": "string", "pattern": "^[a-z][a-z0-9-]*\\.stdout\\.log$"},
+        "stderr": {"type": "string", "pattern": "^[a-z][a-z0-9-]*\\.stderr\\.log$"},
+        "visual_review": {"enum": ["not_run"]},
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "bytes", "sha256"],
+            "properties": {
+              "path": {"type": "string", "pattern": "^artifacts/guest/build/"},
+              "bytes": {"type": "integer", "minimum": 0},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  }
+}

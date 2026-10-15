@@ -50,3 +50,26 @@ Record actual command exit codes, source commit, JDK/compiler versions and the s
 ## Bootstrap recovery
 
 A bad checksum, invalid ZIP path, symlink/special entry, missing launcher or archive-size limit fails before promotion. Incomplete staging is removed; an existing invalid cache is preserved. Inspect and remove only the generated `build/toolchains/gradle-8.14.3` cache before retrying. An existing `.install-lock` is never stolen: confirm no installer is running before removing a stale generated lock. Do not delete unrelated toolchains or installation directories.
+
+## Preflight, deadlines and results
+
+Both existing entry points accept `--hc-preflight`, `--hc-timeout SECONDS` and `--hc-revision COMMIT`. Preflight requires a Git checkout, records its HEAD/tree and a SHA-256 snapshot of tracked and unignored files, and probes the installed Java/CMake tools. `--hc-revision` accepts a complete 40-character commit and rejects a different HEAD. Dirty source is recorded rather than silently attributed to the commit; a source change during execution fails the result. Preflight never downloads Gradle, resolves Fabric or launches a game.
+
+```console
+python tools/test_bridge.py --hc-preflight
+python tools/gradle.py --hc-preflight build
+python tools/test_bridge.py --hc-timeout 600
+python tools/gradle.py --hc-timeout 1800 build
+```
+
+The timeout is the complete invocation's execution budget, including probes and bootstrap; bridge commands also have a 120-second per-stage ceiling. Deadline expiry or interruption cancels only the invocation's owned process tree and performs bounded cleanup. Linux uses an isolated process group and child-subreaper helper; Windows assigns a gated helper to a Job Object before releasing the command. A zero-exit parent with leftover descendants is a failed result, even when cleanup subsequently succeeds. A shared `build/.validation-lock` prevents these entry points from concurrently changing the same build outputs. An existing lock is not removed or stolen; check its owner record and active validation before removing a stale lock.
+
+Every invocation writes a distinct `reports/validation/<run>/result.json` and prints its repository-relative location as JSON. The [version 1 schema](../schemas/validation-v1.schema.json) defines the report. Results distinguish `blocked`, `failed`, `timed_out`, `interrupted`, `passed` and `incomplete`; preflight-only success is `preflight_passed`, with execution stages still `not_run`. Each executed stage retains separate stdout/stderr logs, its actual exit code, elapsed time and cleanup result. Java classes are compiled into a new per-run output directory, not reused from an earlier test run. The native peer location documented above remains unchanged.
+
+Gradle bootstrap, Gradle execution and evidence collection are separate stages. The report retains the task names and outcomes actually emitted by Gradle's plain console, including failed compile or GameTest tasks; detailed dependency, Mixin or runtime failures remain in their stage logs. Project/build-file redirection, additional init scripts/composite builds and dry-run execution are rejected by the validation wrapper. Existing explicit Minecraft opt-ins are required before bootstrap; client runs additionally check the supplied peer file and record its hash. A configured display or accepted command is not a completed game test.
+
+Evidence collection preserves new or changed PNG, XML and log files under `guest/build`, excluding world data, compiled classes and dependency caches. It runs after Gradle failure as well as success. Unchanged screenshots cannot satisfy a new client run; all three expected names, including Fabric counter prefixes, are required. Copied files carry sizes and SHA-256 values; PNG signatures and dimensions are checked, while `visual_review` remains `not_run` until the screenshots are separately inspected. Traversal, source files and evidence have explicit limits; exceeding a limit fails collection rather than silently omitting results. Raw tool logs may contain local paths: inspect them before sharing. Nothing is uploaded automatically, and the report does not mark Minecraft or Dying Light acceptance complete.
+
+Process ownership follows [Python subprocess](https://docs.python.org/3.13/library/subprocess.html), [Windows Job Objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects) and [Linux child subreapers](https://man7.org/linux/man-pages/man2/PR_SET_CHILD_SUBREAPER.2const.html). These controls manage trusted build/test descendants; they are not a sandbox for hostile programs.
+
+The validation entry accepts exact `build`, `check`, `test`, `runGameTest` and `runClientGameTest` task names, optionally with `clean`; task abbreviations, other tasks, exclusions and dry runs are rejected. Requested game tasks must appear as executed, not skipped or cached. Evidence-directory read failures remain failures rather than empty successful collections.
