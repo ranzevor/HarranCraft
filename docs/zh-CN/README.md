@@ -1,0 +1,17 @@
+# 文档导航
+
+[English](../README.md) · [项目概览](../../README.zh-CN.md)
+
+| 任务 | 文档 |
+| --- | --- |
+| 核查 EXE／DLL 与理解报告 | [核查工具](inspector.md) |
+| 构建、格式化及运行测试 | [开发指南](development.md) |
+| 区分实际能力与目标平台 | [兼容范围](compatibility.md) |
+| 理解状态归属与融合边界 | [架构](architecture.md) |
+| 跟踪完整玩法目标 | [路线图](roadmap.md) |
+| 参与贡献 | [贡献指南](contributing.md) |
+| 区分测试证据层级 | [验证模型](../testing.md) |
+| 核对宿主接口研究 | [消光接口研究](../host-research.md) |
+| 查看初始验证记录 | [基线证据](../evidence/initial-baseline.md) |
+
+仓库遵循[工程契约](../../AGENTS.md)、[安全政策](../../SECURITY.md)、[行为准则](../../CODE_OF_CONDUCT.md)、[支持要求](../../SUPPORT.md)、[许可](../../LICENSE)及[第三方清单](../../THIRD_PARTY_NOTICES.md)。[变更记录](../../CHANGELOG.md)只记录实际变更；计划属于路线图。

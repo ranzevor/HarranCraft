@@ -1,0 +1,33 @@
+name: Experiment evidence / 实验证据
+description: Record a reproducible integration experiment / 记录可复现融合实验
+body:
+  - type: input
+    id: identity
+    attributes:
+      label: Source and binary identities / 源码与程序身份
+      description: Commit, hashes and file versions only; no binaries or private paths. 仅提供提交、哈希与文件版本，不附程序或私人路径。
+    validations:
+      required: true
+  - type: dropdown
+    id: level
+    attributes:
+      label: Evidence level / 证据层级
+      options:
+        - Generated input / 生成式输入
+        - Process integration / 进程集成
+        - Native graphics experiment / 原生图形实验
+        - Real Dying Light 1 single-player / 消光 1 单人实机
+    validations:
+      required: true
+  - type: textarea
+    id: observation
+    attributes:
+      label: Inputs, expected result and observations / 输入、预期与观察
+    validations:
+      required: true
+  - type: textarea
+    id: restoration
+    attributes:
+      label: Cleanup, failure and repeatability / 清理、失败及重复结果
+    validations:
+      required: true

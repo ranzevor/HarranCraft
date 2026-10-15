@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools==82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "harrancraft-tools"
+dynamic = ["version"]
+description = "Read-only binary inspection tools for HarranCraft development"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+keywords = ["dying-light", "minecraft", "pe", "binary-inspection"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: Console",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Testing",
+]
+
+[project.scripts]
+hc-inspect = "harrancraft_tools.cli:main"
+
+[project.urls]
+Repository = "https://github.com/ranzevor/HarranCraft"
+Issues = "https://github.com/ranzevor/HarranCraft/issues"
+Documentation = "https://github.com/ranzevor/HarranCraft/tree/main/docs"
+
+[tool.setuptools.dynamic]
+version = {attr = "harrancraft_tools.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+harrancraft_tools = ["locales/*.json", "py.typed"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

@@ -1,0 +1,20 @@
+{
+  "help": "HarranCraft binary inspector\n\nUsage: hc-inspect [--language en-US|zh-CN] [--json] [--exports] FILE ...\n\nRead metadata and SHA-256 from 1–16 explicit AMD64 PE32+ files.\n--json       Write a versioned JSON inspection report.\n--exports    Include named, ordinal-only and forwarded exports.\n--language   Select output language; unsupported values fall back to en-US.\n--version    Print the tool version.\n--help, -h   Show this help.\n\nMaximum file size: 512 MiB. No game files are loaded or changed.\nA successful inspection is not a game compatibility result.",
+  "error.arguments": "Provide 1–16 file arguments with supported options. Run hc-inspect --help.",
+  "error.invalid_pe": "The file has an invalid or unsupported PE header or section layout.",
+  "error.unsupported_machine": "The file is not an AMD64 executable image.",
+  "error.unsupported_format": "The file is not in PE32+ format.",
+  "error.ambiguous_sections": "The file contains overlapping sections.",
+  "error.unbacked_rva": "Requested metadata is not fully backed by file bytes.",
+  "error.invalid_exports": "The export table contains invalid names, indices or addresses.",
+  "error.invalid_resources": "The version resource has an invalid structure.",
+  "error.metadata_limit": "Metadata exceeds the bounded inspection limits.",
+  "error.file_limit": "The file exceeds the 512 MiB inspection limit.",
+  "error.input_changed": "The input changed during inspection. Retry with an unchanged file.",
+  "error.not_regular_file": "The input is not a regular file.",
+  "error.input_unreadable": "The input could not be read. Check the file and read permission.",
+  "error.interrupted": "Inspection interrupted.",
+  "input.error": "Input {index}: {message}",
+  "input.summary": "Input {index}: AMD64 PE32+ {kind}, {size} bytes\nSHA-256: {sha256}\nExports: {exports}",
+  "input.version": "File version: {version}"
+}

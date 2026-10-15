@@ -1,0 +1,28 @@
+name: Bug report / 缺陷报告
+description: Report a reproducible failure / 报告可复现故障
+body:
+  - type: input
+    id: revision
+    attributes:
+      label: Commit or tool version / 提交或工具版本
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS and Python version / 系统及 Python 版本
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps and expected result / 步骤及预期结果
+      description: Use original minimal inputs, not game files or personal paths. 使用原创最小输入，不上传游戏文件或个人路径。
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result and exit code / 实际结果及退出码
+    validations:
+      required: true

@@ -1,0 +1,20 @@
+{
+  "help": "HarranCraft 程序文件核查工具\n\n用法：hc-inspect [--language en-US|zh-CN] [--json] [--exports] FILE ...\n\n读取 1–16 个明确指定的 AMD64 PE32+ 文件的元数据和 SHA-256。\n--json       输出带版本号的 JSON 核查报告。\n--exports    包含具名、仅序号和转发导出。\n--language   选择输出语言；不支持的值回退到 en-US。\n--version    显示工具版本。\n--help, -h   显示帮助。\n\n单文件上限：512 MiB。不加载或改写游戏文件。\n核查成功不表示游戏兼容通过。",
+  "error.arguments": "请提供 1–16 个文件参数并使用支持的选项。运行 hc-inspect --help 查看用法。",
+  "error.invalid_pe": "文件的 PE 头或节区布局无效，或不在支持的解析范围内。",
+  "error.unsupported_machine": "文件不是 AMD64 可执行映像。",
+  "error.unsupported_format": "文件不是 PE32+ 格式。",
+  "error.ambiguous_sections": "文件包含重叠节区。",
+  "error.unbacked_rva": "所需元数据没有完整对应的文件内容。",
+  "error.invalid_exports": "导出表包含无效名称、序号或地址。",
+  "error.invalid_resources": "版本资源结构无效。",
+  "error.metadata_limit": "元数据超过核查资源上限。",
+  "error.file_limit": "文件超过 512 MiB 核查上限。",
+  "error.input_changed": "核查期间输入文件发生变化。请使用未变化的文件重试。",
+  "error.not_regular_file": "输入不是普通文件。",
+  "error.input_unreadable": "无法读取输入。请检查文件及读取权限。",
+  "error.interrupted": "核查已中断。",
+  "input.error": "输入 {index}：{message}",
+  "input.summary": "输入 {index}：AMD64 PE32+ {kind}，{size} 字节\nSHA-256：{sha256}\n导出数量：{exports}",
+  "input.version": "文件版本：{version}"
+}
