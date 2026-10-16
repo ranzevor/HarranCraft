@@ -132,3 +132,73 @@ jobs:
               }
             }
           }
+
+  fabric-build:
+    name: Ubuntu / Fabric compile and production JAR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Compile Fabric sources and verify production JAR
+        shell: bash
+        run: |
+          test -x "$JAVA_HOME_21_X64/bin/javac"
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          python tools/gradle.py --hc-timeout 1800 build -PrunMinecraftTests=false -PacceptMinecraftEula=false -PrunLanTests=false
+      - name: Inspect Fabric build result
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("reports/validation")
+          reports = sorted(root.glob("*/result.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+          if not reports:
+              print("Fabric validation report unavailable")
+              raise SystemExit(1)
+          path = reports[0]
+          result = json.loads(path.read_text(encoding="utf-8"))
+          print("status=" + str(result.get("status")))
+          print("reason=" + str(result.get("reason", "")))
+          print("minecraft_execution=" + str(result.get("minecraft_execution")))
+          print("lan_execution=" + str(result.get("lan_execution")))
+          for task in result.get("gradle_task_results", []):
+              if task.get("task") in {":compileJava", ":compileGametestJava", ":remapJar", ":verifyGuestJar", ":build"}:
+                  print("task=" + str(task.get("task")) + " outcome=" + str(task.get("outcome")))
+          for stage in result.get("stages", []):
+              print("stage=" + str(stage.get("name")) + " status=" + str(stage.get("status")))
+              if stage.get("status") not in {"failed", "timed_out", "blocked", "interrupted"}:
+                  continue
+              for key in ("stderr", "stdout"):
+                  name = stage.get(key)
+                  if not isinstance(name, str):
+                      continue
+                  log = path.parent / name
+                  if not log.is_file():
+                      continue
+                  lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+                  for line in lines[-100:]:
+                      print(line[:600])
+          if result.get("status") != "passed" or result.get("minecraft_execution") is not False or result.get("lan_execution") is not False:
+              raise SystemExit(1)
+          completed = {
+              task.get("task"): task.get("outcome")
+              for task in result.get("gradle_task_results", [])
+          }
+          if completed.get(":build") not in {"executed", "UP-TO-DATE", "FROM-CACHE"}:
+              raise SystemExit("Gradle build task was not completed")
+          if completed.get(":verifyGuestJar") != "executed":
+              raise SystemExit("Production JAR was not verified by this run")
+          PY
