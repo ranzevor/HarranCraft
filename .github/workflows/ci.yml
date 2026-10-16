@@ -126,9 +126,16 @@ jobs:
                   Write-Output ("remaining_processes=" + ($stage.remaining_processes -join ','))
                 }
               }
-              if ($stage.status -ne 'passed' -and $stage.stderr) {
-                $log = Join-Path $_.DirectoryName $stage.stderr
-                if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 60 }
+              if ($stage.status -ne 'passed') {
+                foreach ($stream in @('stdout', 'stderr')) {
+                  $name = $stage.$stream
+                  if (-not $name) { continue }
+                  $log = Join-Path $_.DirectoryName $name
+                  if (Test-Path -LiteralPath $log) {
+                    Write-Output ("{0}:" -f $stream)
+                    Get-Content -LiteralPath $log -Tail 100
+                  }
+                }
               }
             }
           }
@@ -188,9 +195,16 @@ jobs:
               if ($stage.remaining_processes) {
                 Write-Output ("remaining_processes=" + ($stage.remaining_processes -join ','))
               }
-              if ($stage.status -ne 'passed' -and $stage.stderr) {
-                $log = Join-Path $_.DirectoryName $stage.stderr
-                if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 50 }
+              if ($stage.status -ne 'passed') {
+                foreach ($stream in @('stdout', 'stderr')) {
+                  $name = $stage.$stream
+                  if (-not $name) { continue }
+                  $log = Join-Path $_.DirectoryName $name
+                  if (Test-Path -LiteralPath $log) {
+                    Write-Output ("{0}:" -f $stream)
+                    Get-Content -LiteralPath $log -Tail 100
+                  }
+                }
               }
             }
           }

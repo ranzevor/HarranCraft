@@ -47,7 +47,7 @@ struct Hash {
         return BCryptHashData(state, bytes, length, 0) >= 0;
     }
     bool finish(std::uint8_t (&digest)[32]) const {
-        return BCryptFinishHash(state, digest, sizeof(digest), 0) >= 0;
+        return BCryptFinishHash(state, digest, static_cast<ULONG>(sizeof(digest)), 0) >= 0;
     }
 };
 
@@ -77,8 +77,8 @@ bool seek(HANDLE handle, std::int64_t offset) {
 
 bool is_amd64_executable(HANDLE handle, std::uint64_t size) {
     IMAGE_DOS_HEADER dos{};
-    if (!seek(handle, 0) || !read_exact(handle, &dos, sizeof(dos))
-        || dos.e_magic != IMAGE_DOS_SIGNATURE || dos.e_lfanew < sizeof(dos)) {
+    if (!seek(handle, 0) || !read_exact(handle, &dos, static_cast<DWORD>(sizeof(dos)))
+        || dos.e_magic != IMAGE_DOS_SIGNATURE || dos.e_lfanew < static_cast<LONG>(sizeof(dos))) {
         return false;
     }
     const auto nt_offset = static_cast<std::uint64_t>(dos.e_lfanew);
@@ -87,7 +87,7 @@ bool is_amd64_executable(HANDLE handle, std::uint64_t size) {
         return false;
     }
     IMAGE_NT_HEADERS64 header{};
-    if (!read_exact(handle, &header, sizeof(header))) return false;
+    if (!read_exact(handle, &header, static_cast<DWORD>(sizeof(header)))) return false;
     return header.Signature == IMAGE_NT_SIGNATURE
         && header.FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64
         && header.FileHeader.SizeOfOptionalHeader >= sizeof(IMAGE_OPTIONAL_HEADER64)
@@ -135,7 +135,7 @@ std::uint32_t probe(HC_HostImageV1& identity) {
     std::uint64_t remaining = file_bytes;
     while (remaining != 0) {
         const DWORD target = static_cast<DWORD>(
-            std::min<std::uint64_t>(remaining, chunk.size()));
+            std::min<std::uint64_t>(remaining, static_cast<std::uint64_t>(chunk.size())));
         DWORD received = 0;
         if (!ReadFile(file.handle, chunk.data(), target, &received, nullptr)) {
             return HC_HOST_PROBE_SYSTEM_FAILURE;
@@ -154,7 +154,7 @@ std::uint32_t probe(HC_HostImageV1& identity) {
         return HC_HOST_PROBE_IMAGE_CHANGED;
     }
     if (!digest.finish(identity.sha256)) return HC_HOST_PROBE_SYSTEM_FAILURE;
-    identity.size = sizeof(HC_HostImageV1);
+    identity.size = static_cast<std::uint32_t>(sizeof(HC_HostImageV1));
     identity.version = HC_HOST_IMAGE_ABI_V1;
     identity.machine = IMAGE_FILE_MACHINE_AMD64;
     identity.file_bytes = file_bytes;
