@@ -91,8 +91,7 @@ def validate(check: Validation, arguments: list[str]) -> None:
         )
         module_comparison["status"] = (
             "passed"
-            if re.fullmatch(r"[0-9a-f]{64}", module_result)
-            and module_result == module_expected
+            if re.fullmatch(r"[0-9a-f]{64}", module_result) and module_result == module_expected
             else "failed"
         )
         check.save()

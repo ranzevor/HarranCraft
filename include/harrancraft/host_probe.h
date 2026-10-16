@@ -1,6 +1,7 @@
 #ifndef HARRANCRAFT_HOST_PROBE_H
 #define HARRANCRAFT_HOST_PROBE_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define HC_HOST_IMAGE_ABI_V1 1u
