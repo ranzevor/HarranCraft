@@ -98,3 +98,18 @@ jobs:
           $env:JAVA_HOME = $jdk
           $env:Path = "$(Join-Path $jdk 'bin');$env:Path"
           python tools/test_bridge.py --hc-timeout 900
+      - name: Inspect Windows bridge failure
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem 'reports/validation' -Recurse -Filter 'result.json' | ForEach-Object {
+            $data = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+            Write-Output ("status={0} reason={1} failed_stage={2}" -f $data.status, $data.reason, $data.failed_stage)
+            foreach ($stage in $data.stages) {
+              Write-Output ("stage={0} status={1} exit={2} reason={3}" -f $stage.name, $stage.status, $stage.exit_code, $stage.reason)
+              if ($stage.status -ne 'passed' -and $stage.stderr) {
+                $log = Join-Path $_.DirectoryName $stage.stderr
+                if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 60 }
+              }
+            }
+          }
