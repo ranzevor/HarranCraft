@@ -62,6 +62,10 @@ class WindowsJob:
             "AssignProcessToJobObject": ([w.HANDLE, w.HANDLE], w.BOOL),
             "TerminateJobObject": ([w.HANDLE, w.UINT], w.BOOL),
             "CloseHandle": ([w.HANDLE], w.BOOL),
+            "QueryFullProcessImageNameW": (
+                [w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)],
+                w.BOOL,
+            ),
         }
         for name, (arguments, result) in signatures.items():
             function = getattr(self.api, name)
@@ -102,6 +106,39 @@ class WindowsJob:
             )
         )
         return result.active
+
+    def active_process_names(self) -> list[str]:
+        from ctypes import wintypes as w
+
+        class ProcessIds(ctypes.Structure):
+            _fields_ = [
+                ("assigned", w.DWORD),
+                ("count", w.DWORD),
+                ("values", ctypes.c_size_t * 256),
+            ]
+
+        members = ProcessIds()
+        self.checked(
+            self.api.QueryInformationJobObject(
+                self.handle, 3, ctypes.byref(members), ctypes.sizeof(members), None
+            )
+        )
+        names = []
+        for index in range(min(members.count, 256)):
+            process = self.api.OpenProcess(0x1000, False, members.values[index])
+            if not process:
+                names.append("unavailable")
+                continue
+            try:
+                buffer = ctypes.create_unicode_buffer(32768)
+                length = w.DWORD(len(buffer))
+                if self.api.QueryFullProcessImageNameW(process, 0, buffer, ctypes.byref(length)):
+                    names.append(buffer.value.rsplit("\\", 1)[-1])
+                else:
+                    names.append("unavailable")
+            finally:
+                self.api.CloseHandle(process)
+        return sorted(names)
 
     def terminate(self) -> None:
         self.checked(self.api.TerminateJobObject(self.handle, 1))
@@ -310,6 +347,10 @@ def execute(
                         time.sleep(POLL_SECONDS)
                     if job.active():
                         outcome["descendants_terminated"] = True
+                        try:
+                            outcome["remaining_processes"] = job.active_process_names()
+                        except OSError:
+                            outcome["remaining_processes"] = ["unavailable"]
                         job.terminate()
                     deadline = time.monotonic() + CLEANUP_SECONDS
                     while job.active() and time.monotonic() < deadline:

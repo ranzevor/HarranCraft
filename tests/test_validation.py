@@ -461,6 +461,24 @@ class AdditionalProcessTests(unittest.TestCase):
         self.assertEqual((self.root / "batch.stdout.log").read_text().strip(), "launched")
 
     @unittest.skipUnless(os.name == "nt", "Windows Job Object ownership")
+    def test_windows_job_reports_active_process_names(self) -> None:
+        job = processes.WindowsJob()
+        process = subprocess.Popen(
+            [sys.executable, "-S", "-c", "import time; time.sleep(10)"]
+        )
+        try:
+            job.attach(process.pid)
+            names = job.active_process_names()
+            self.assertIn("python.exe", [name.lower() for name in names])
+        finally:
+            try:
+                if process.poll() is None:
+                    job.terminate()
+                process.wait(timeout=5)
+            finally:
+                job.close()
+
+    @unittest.skipUnless(os.name == "nt", "Windows Job Object ownership")
     def test_windows_assignment_failure_never_releases_command(self) -> None:
         marker = self.root / "unexpected.txt"
         with patch.object(
