@@ -19,7 +19,7 @@
     "source": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/source"}]},
     "source_after": {"$ref": "#/$defs/source"},
     "tools": {"type": "object"},
-    "preflight": {"enum": ["not_run", "running", "passed", "blocked", "failed", "timed_out"]},
+    "preflight": {"enum": ["not_run", "running", "passed", "blocked", "failed", "timed_out", "interrupted"]},
     "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}}
   },
   "$defs": {

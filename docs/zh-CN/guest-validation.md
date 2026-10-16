@@ -72,4 +72,12 @@ Gradle 启动器准备、Gradle 执行及证据收集分别记为阶段。报告
 
 进程归属依据 [Python subprocess](https://docs.python.org/3.13/library/subprocess.html)、[Windows Job Objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects) 和 [Linux 子进程回收](https://man7.org/linux/man-pages/man2/PR_SET_CHILD_SUBREAPER.2const.html)。这些机制管理可信构建／测试命令的后代，不构成运行恶意程序的沙箱。
 
-验收入口接受精确的 `build`、`check`、`test`、`runGameTest`、`runClientGameTest` 任务名，可组合 `clean`；拒绝任务缩写、其他任务、排除任务及空跑。已请求的游戏任务必须实际执行，不能以跳过或缓存结果代替。证据目录读取错误保持为失败，不转换为空集合成功。
+### 调用与完成判定
+
+验收入口接受精确的根项目任务 `build`、`check`、`test`、`runGameTest`、`runClientGameTest`，可组合 `clean` 并使用前导冒号；拒绝任务缩写、其他项目任务路径、排除任务及空跑。退出码为 0 不足以判定通过：每个请求的根任务都必须出现在实际任务结果中。普通任务可通过执行、`UP-TO-DATE` 或 `FROM-CACHE` 完成；游戏任务必须实际执行。任务缺失、跳过或出现任何 `FAILED` 任务均阻止通过。`uncompleted_tasks` 和 `unexecuted_game_tasks` 保留具体未满足项。证据目录读取错误保持为失败，不转换为空集合成功。
+
+支持的 Gradle 选项为 `--offline`、`--refresh-dependencies`、`--rerun-tasks`、`--stacktrace`、`--full-stacktrace`、`--info`、`--build-cache`、`--no-build-cache`、`--parallel`、`--no-parallel`、`--continue`、`--no-daemon`、`--console=plain` 和 `--max-workers=N`（1–9999）。其他选项在预检前拒绝，包括仅输出帮助／版本的命令、守护进程控制、构建扫描、其他属性写法及选项缩写。入口固定非守护进程执行及普通控制台输出。
+
+项目属性采用 `-Pname=value`，仅接受 `runMinecraftTests`、`acceptMinecraftEula`、`peerExecutable`；拒绝重复属性及非布尔游戏开关。两个游戏开关必须显式为 true 才允许游戏执行，否则本次调用明确传入两个 false，覆盖环境变量或用户级 Gradle 属性中的隐含值。客户端测试继续执行既有对端文件和图形条件检查。
+
+工具探测在 `tools` 中保留标准输出／错误引用、退出码、耗时、清理结果及原始失败详情。探测失败、条件缺失、超时和中断分别保留对应状态；进程成功但版本无法识别时，探测检查仍判失败。源码身份获取超时保持 `timed_out`；最终报告不会将已中断或失败的预检保留为 `running`。

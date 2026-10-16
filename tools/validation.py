@@ -305,6 +305,9 @@ class Validation:
             self.reject("python_version_unsupported")
         try:
             self.report["source"] = source_identity(self.root, self.deadline)
+        except (TimeoutError, subprocess.TimeoutExpired) as error:
+            self.report["source_error_type"] = type(error).__name__
+            self.reject("source_identity_timed_out", "timed_out")
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             self.report["source_error_type"] = type(error).__name__
             if isinstance(error, ValueError):
@@ -341,13 +344,11 @@ class Validation:
             }
             match = re.search(patterns[tool], text)
             version = match.group(1) if match else None
-            self.report["tools"][tool] = {
-                "status": result["status"],
-                "version": version,
-                "cleanup": result["cleanup"],
-            }
-            if result["status"] != "passed" or version is None:
-                self.reject("required_tool_probe_failed")
+            self.report["tools"][tool] = result | {"version": version}
+            if result["status"] != "passed":
+                self.reject("required_tool_probe_" + result["status"], result["status"])
+            if version is None:
+                self.reject("required_tool_version_unrecognized", "failed")
             numbers = tuple(map(int, version.split(".")))
             if tool in {"java", "javac"} and numbers[0] != 21:
                 self.reject("jdk_version_unsupported")
@@ -480,6 +481,8 @@ def entry(
         pass
     except KeyboardInterrupt:
         validation.report.update(status="interrupted", reason="interrupted")
+        if validation.report["preflight"] == "running":
+            validation.report["preflight"] = "interrupted"
     except Exception as error:
         import traceback
 
@@ -488,6 +491,8 @@ def entry(
         validation.report.update(
             status="failed", error_type=type(error).__name__, diagnostic="failure.log"
         )
+        if validation.report["preflight"] == "running":
+            validation.report["preflight"] = "failed"
     finally:
         signal.signal(signal.SIGTERM, old_handler)
     return validation.finish()

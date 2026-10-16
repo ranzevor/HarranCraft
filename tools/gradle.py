@@ -140,25 +140,69 @@ def validate(check: Validation, arguments: list[str]) -> None:
             )
         ):
             check.reject("validation_project_override_rejected")
-    tasks = {
-        value.rsplit(":", 1)[-1]
-        for value in arguments
-        if re.fullmatch(r":?[A-Za-z][A-Za-z0-9_:.-]*", value)
-    }
     if any(value in {"-m", "--dry-run"} for value in arguments):
         check.reject("validation_dry_run_rejected")
-    allowed_tasks = {"build", "check", "test", "clean", "runGameTest", "runClientGameTest"}
-    if not tasks or tasks - allowed_tasks or tasks == {"clean"}:
-        check.reject("validation_task_unsupported")
     if any(value == "-x" or value.startswith(("-x", "--exclude-task")) for value in arguments):
         check.reject("validation_task_exclusion_rejected")
-    enabled = "-PrunMinecraftTests=true" in arguments
+    allowed_tasks = {"build", "check", "test", "clean", "runGameTest", "runClientGameTest"}
+    allowed_flags = {
+        "--offline",
+        "--refresh-dependencies",
+        "--rerun-tasks",
+        "--stacktrace",
+        "--full-stacktrace",
+        "--info",
+        "--build-cache",
+        "--no-build-cache",
+        "--parallel",
+        "--no-parallel",
+        "--continue",
+        "--no-daemon",
+        "--console=plain",
+    }
+    tasks = set()
+    supplied = {}
+    for argument in arguments:
+        task = argument.removeprefix(":")
+        if task in allowed_tasks:
+            tasks.add(task)
+        elif argument.startswith("-P"):
+            name, separator, value = argument[2:].partition("=")
+            if name not in {"runMinecraftTests", "acceptMinecraftEula", "peerExecutable"}:
+                check.reject("validation_property_unsupported")
+            if name in supplied:
+                check.reject("duplicate_validation_property")
+            if not separator or not value or any(ord(char) < 32 for char in value):
+                check.reject("validation_property_invalid")
+            if name != "peerExecutable" and value not in {"true", "false"}:
+                check.reject("validation_property_invalid")
+            supplied[name] = value
+        elif argument not in allowed_flags and not re.fullmatch(
+            r"--max-workers=[1-9][0-9]{0,3}", argument
+        ):
+            check.reject(
+                "validation_option_unsupported"
+                if argument.startswith("-")
+                else "validation_task_unsupported"
+            )
+    if not tasks or tasks == {"clean"}:
+        check.reject("validation_task_unsupported")
+    enabled = supplied.get("runMinecraftTests", "false") == "true"
     game = enabled or bool(tasks & {"runGameTest", "runClientGameTest"})
     client = "runClientGameTest" in tasks or (enabled and bool(tasks & {"build", "check", "test"}))
     check.report["requested_tasks"] = sorted(tasks)
     check.report["minecraft_execution"] = game
-    if game and not (enabled and "-PacceptMinecraftEula=true" in arguments):
+    if game and not (enabled and supplied.get("acceptMinecraftEula") == "true"):
         check.reject("minecraft_opt_in_required")
+    # Command-line project properties override ambient Gradle properties and environment values.
+    arguments = [
+        value
+        for value in arguments
+        if not value.startswith(("-PrunMinecraftTests=", "-PacceptMinecraftEula="))
+        and value not in {"--no-daemon", "--console=plain"}
+    ]
+    selected = "true" if enabled else "false"
+    arguments.extend([f"-PrunMinecraftTests={selected}", f"-PacceptMinecraftEula={selected}"])
     check.preflight(("java", "javac"))
     properties = {}
     for line in (ROOT / "guest/gradle.properties").read_text(encoding="utf-8").splitlines():
@@ -246,16 +290,27 @@ def validate(check: Validation, arguments: list[str]) -> None:
             ]
             check.report["gradle_failed_tasks"] = failed
             executed = {
-                value["task"].rsplit(":", 1)[-1]
+                value["task"].removeprefix(":")
                 for value in check.report["gradle_task_results"]
                 if value["outcome"] == "executed"
             }
+            completed = {
+                value["task"].removeprefix(":")
+                for value in check.report["gradle_task_results"]
+                if value["outcome"] in {"executed", "UP-TO-DATE", "FROM-CACHE"}
+            }
+            check.report["uncompleted_tasks"] = sorted(tasks - completed)
             required_game_tasks = tasks & {"runGameTest", "runClientGameTest"}
             if enabled and tasks & {"build", "check", "test"}:
                 required_game_tasks = {"runGameTest", "runClientGameTest"}
             check.report["unexecuted_game_tasks"] = sorted(required_game_tasks - executed)
-            if required_game_tasks - executed and check.report["status"] == "running":
-                check.report.update(status="failed", reason="game_task_not_executed")
+            if check.report["status"] == "running":
+                if failed:
+                    check.report.update(status="failed", reason="gradle_task_failed")
+                elif required_game_tasks - executed:
+                    check.report.update(status="failed", reason="game_task_not_executed")
+                elif tasks - completed:
+                    check.report.update(status="failed", reason="requested_task_not_completed")
         check.save()
     if stage["status"] != "passed":
         check.reject("required_evidence_missing", "failed")

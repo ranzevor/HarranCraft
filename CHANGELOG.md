@@ -17,6 +17,7 @@
 
 ### Changed
 
+- Validation preserves probe timeout/interruption and diagnostic outcomes, requires completion of requested Gradle tasks even after exit code zero, rejects ambiguous invocation options and fixes game-test opt-ins per invocation.
 - Private-pipe shutdown supports explicit owned-endpoint cancellation, preserves I/O and cleanup failures, and exposes worker termination separately from connection invalidation. Queue handoff rejects reads completing after close. Native fault tests cover saturation, broken and partial pipes, concurrent close and repeated resource retirement.
 - Repository text checks cover Java, C++, Gradle and properties files; generated caches are pruned before traversal. CI Action and permission restrictions remain unchanged.
 - Failed welcomes, replayed receipts and events close the session. Adapter exceptions invalidate it; input and output stream closure are independent. Chunk state reads occur only after thread, mode and subscription checks. Default Fabric builds do not execute Minecraft.
@@ -29,6 +30,7 @@ Java/C++ reference frames, controlled process checks and affected lifecycle/tool
 
 ### 未发布变更
 
+- 验收报告保留探测超时、中断及诊断结果；即使退出码为零，也须确认请求的 Gradle 任务完成；拒绝歧义调用选项，并按本次调用固定游戏测试开关。
 - 在现有桥接与 Gradle 入口新增本地预检、源码指纹、整次时限、自有进程清理及带版本号的分阶段报告；收集新增或变化的游戏测试证据，不复用未变化的旧截图。
 - 私有管道关闭支持显式的自有对端取消，保留 I/O 与清理异常，并分别查询连接失效和工作线程结束。关闭后才完成的读取不再进入队列；原生故障测试覆盖饱和、断管、截断、并发关闭及反复资源回收。
 - 新增 Fabric 方块适配源码：服务端线程访问、已加载位置检查、规范状态条件替换及订阅区块变化。
