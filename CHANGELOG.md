@@ -4,6 +4,7 @@
 
 ### Added
 
+- C++20 H1 read-only host observation core with explicit build/mode/read-phase gates, session and camera identities, clip-space coordinate conversion and isolated native CTest.
 - Client GameTest sources for reconnect, world shutdown/reopen/replacement, thread ownership and chest-data preservation; isolated LAN revocation/recovery requires a separate explicit opt-in.
 - Native observation-peer regressions and per-scenario client completion evidence in local validation reports.
 - Local validation preflight, source fingerprints, invocation deadlines, owned-process cleanup and versioned per-stage reports in the existing bridge and Gradle entry points. New or changed game-test evidence is collected without reusing unchanged screenshots.
@@ -32,6 +33,7 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增 C++20 H1 只读宿主观察核心：程序构建、模式及读阶段门禁、会话与相机身份、裁剪空间坐标转换及原生隔离 CTest。
 - 新增断连重连、世界关闭／重开／替换、线程归属及箱子数据保留的客户端 GameTest 源码；隔离 LAN 撤销与恢复需要单独显式启用。
 - 新增原生观察进程回归，并在本地验收报告中核对客户端逐场景完成记录。
 - 验收报告保留探测超时、中断及诊断结果；即使退出码为零，也须确认请求的 Gradle 任务完成；拒绝歧义调用选项，并按本次调用固定游戏测试开关。

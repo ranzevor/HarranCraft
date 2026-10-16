@@ -13,6 +13,7 @@
 | Follow complete gameplay milestones | [Roadmap](roadmap.md) |
 | Classify and reproduce verification | [Testing](testing.md) |
 | Evaluate Dying Light interface evidence | [Host research](host-research.md) |
+| Integrate read-only host session/camera observations | [Host observation core](host-observation.md) |
 | Understand repository/bootstrap decisions | [Decision 0001](decisions/0001-independent-tooling-baseline.md) |
 | Inspect the initial verification record | [Baseline evidence](evidence/initial-baseline.md) |
 

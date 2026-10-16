@@ -14,6 +14,7 @@
 | 参与贡献 | [贡献指南](contributing.md) |
 | 区分测试证据层级 | [验证模型](../testing.md) |
 | 核对宿主接口研究 | [消光接口研究](../host-research.md) |
+| 集成只读宿主会话与相机观察 | [宿主观察核心](host-observation.md) |
 | 查看初始验证记录 | [基线证据](../evidence/initial-baseline.md) |
 
 仓库遵循[工程契约](../../AGENTS.md)、[安全政策](../../SECURITY.md)、[行为准则](../../CODE_OF_CONDUCT.md)、[支持要求](../../SUPPORT.md)、[许可](../../LICENSE)及[第三方清单](../../THIRD_PARTY_NOTICES.md)。[变更记录](../../CHANGELOG.md)只记录实际变更；计划属于路线图。

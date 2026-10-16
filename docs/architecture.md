@@ -8,6 +8,8 @@
 
 The H2-A source adds a Fabric block adapter, chunk-change observation, a Java session/transport core and an independent C++ test peer. Controlled process tests exercise the wire and lifecycle; the Fabric build and real GameTests remain unrun. The embedding API accepts caller-owned private pipes; it does not provide a user launcher. [Block bridge contract](bridge.md)
 
+The independent [H1 observation core](host-observation.md) now checks explicit executable fingerprints, positively asserted single-player/read-phase evidence, session generations and exact world/camera/frame/capture correspondence. Its host-to-guest clip-space projection is mathematical only; it neither locates Dying Light callbacks nor reads the game's camera or depth resources. No game build is accepted by default.
+
 ## Planned runtime boundary
 
 The native Dying Light 1 adapter owns host object identities, original-world queries, camera/depth acquisition and accepted engine calls. A real Fabric guest owns Minecraft inventory, blocks, items and Minecraft simulation. A bridge transports versioned snapshots and commands; it is not a second independent authority over either game's health or objects.
