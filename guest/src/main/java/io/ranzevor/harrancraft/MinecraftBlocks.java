@@ -22,7 +22,7 @@ public final class MinecraftBlocks implements BlockWorld {
 
     public MinecraftBlocks(MinecraftServer server) { this.server = server; }
 
-    private ServerWorld resolve(Frame.Key key) {
+    ServerWorld resolve(Frame.Key key) {
         Identifier id = Identifier.tryParse(key.dimension());
         return id == null ? null : server.getWorld(RegistryKey.of(RegistryKeys.WORLD, id));
     }

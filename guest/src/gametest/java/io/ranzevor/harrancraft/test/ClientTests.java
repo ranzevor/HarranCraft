@@ -1,6 +1,8 @@
 package io.ranzevor.harrancraft.test;
 
 import io.ranzevor.harrancraft.GuestConnections;
+import io.ranzevor.harrancraft.MinecraftCollisionShapes;
+import io.ranzevor.harrancraft.bridge.Frame;
 import io.ranzevor.harrancraft.bridge.Session;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -38,6 +40,15 @@ public final class ClientTests implements FabricClientGameTest {
                 singleplayer.getServer().runOnServer(server -> {
                     if (!server.getOverworld().getBlockState(POS).isOf(Blocks.DIAMOND_BLOCK))
                         throw new AssertionError("Placement was not in the authoritative world");
+                    var geometry = GuestConnections.collisionSnapshot(server, session.epoch(),
+                            new Frame.Key("minecraft:overworld", POS.getX(), POS.getY(), POS.getZ()));
+                    if (geometry.status() != Frame.OK || geometry.snapshot() == null
+                            || !geometry.snapshot().canonicalState().equals("minecraft:diamond_block")
+                            || geometry.snapshot().boxes().size() != 1
+                            || !geometry.snapshot().boxes().getFirst().equals(
+                                    new MinecraftCollisionShapes.Bounds(0, 0, 0, 1, 1, 1))) {
+                        throw new AssertionError("Authoritative collision snapshot was not captured");
+                    }
                 });
                 singleplayer.getServer().runCommand("setblock 0 80 0 minecraft:gold_block");
                 peer.finished(context);
@@ -48,6 +59,11 @@ public final class ClientTests implements FabricClientGameTest {
                     if (!server.getOverworld().getBlockState(POS).isAir()) throw new AssertionError("Removal failed");
                     GuestConnections.tick(server);
                     if (session.isOpen() || session.watchedCount() != 0) throw new AssertionError("Disconnect retained state");
+                    var oldShape = GuestConnections.collisionSnapshot(server, session.epoch(),
+                            new Frame.Key("minecraft:overworld", POS.getX(), POS.getY(), POS.getZ()));
+                    if (oldShape.status() == Frame.OK) {
+                        throw new AssertionError("Retired collision snapshot remained accessible");
+                    }
                 });
             }
             try (GamePeer peer = new GamePeer("stale", prior)) {

@@ -59,6 +59,31 @@ public final class GuestConnections {
         }
     }
 
+    public static MinecraftCollisionShapes.Result collisionSnapshot(
+            MinecraftServer server, long epoch, Frame.Key key) {
+        requireThread(server);
+        if (key == null || key.dimension() == null) {
+            return MinecraftCollisionShapes.Result.error(Frame.INVALID);
+        }
+        if (!allowed(server)) {
+            detach(server);
+            return MinecraftCollisionShapes.Result.error(Frame.FORBIDDEN);
+        }
+        Session session = SESSIONS.get(server);
+        if (session == null || session.epoch() != epoch) {
+            return MinecraftCollisionShapes.Result.error(Frame.STALE_EPOCH);
+        }
+        if (!session.watches(key)) {
+            return MinecraftCollisionShapes.Result.error(Frame.FORBIDDEN);
+        }
+        try {
+            return MinecraftCollisionShapes.read(server, epoch, key);
+        } catch (RuntimeException error) {
+            detach(server);
+            throw error;
+        }
+    }
+
     public static void detach(MinecraftServer server) {
         requireThread(server);
         Session session = SESSIONS.remove(server);

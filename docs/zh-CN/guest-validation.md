@@ -37,7 +37,7 @@ python tools/gradle.py build
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true runGameTest
 ```
 
-显式启用游戏测试时，`build` 和 `check` 生命周期可运行服务端 GameTest；单独执行 `test` 不运行 GameTest。客户端 GameTest 仅在请求 `runClientGameTest` 时运行。服务端 GameTest 检查规范方块状态，并验证隔离 GameTest 服务器不能作为生产桥接端点。客户端测试使用新建嵌入式世界及 `test_bridge.py` 生成的原生测试进程。Linux 默认单配置输出对应：
+显式启用游戏测试时，`build` 和 `check` 生命周期可运行服务端 GameTest；单独执行 `test` 不运行 GameTest。客户端 GameTest 仅在请求 `runClientGameTest` 时运行。服务端 GameTest 检查规范方块状态、实际空气／整方块／半砖碰撞形状，并验证隔离 GameTest 服务器不能作为生产桥接端点。客户端测试使用新建嵌入式世界及 `test_bridge.py` 生成的原生测试进程。Linux 默认单配置输出对应：
 
 ```console
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true -PpeerExecutable=../build/bridge/native/hc-bridge-peer runClientGameTest

@@ -19,6 +19,8 @@ Windows native bridge tests additionally load the read-only host probe DLL in a 
 
 The native `host-observation` CTest exercises the read-only [H1 observation core](host-observation.md) under a synthetic build allowlist and generated camera data. It verifies rejected identity, mode, read phase and stale frame conditions, strict source-thread access, coordinate transformation and session revocation. It is not an actual host callback or depth-buffer test.
 
+The Fabric `MinecraftCollisionShapes` source collects Minecraft's actual block collision geometry for subscribed, loaded positions under a matching guest epoch. Its GameTests cover full-block, slab, air and an authorized client-world snapshot, including refusal after disconnect. CI compiles these GameTest classes but does not execute Minecraft, establish the renderer's mesh geometry or verify Dying Light native physics.
+
 ## Bridge and guest checks
 
 `python tools/test_bridge.py` compiles C++ with strict warnings and Java with `--release 21 -Xlint:all -Werror`, runs the wire/core/lifecycle suites, compares the complete 512-byte reference frame, and exercises three actual Java/C++ pipe scenarios against a controlled world. It checks command ordering, receipt replay/conflicts, generations, capacities, failed sends and cleanup. It does not instantiate Minecraft.

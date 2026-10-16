@@ -37,7 +37,7 @@ Read the [Minecraft EULA](https://www.minecraft.net/eula) before running game te
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true runGameTest
 ```
 
-With explicit game-test opt-in, the `build` and `check` lifecycles can run server GameTests; `test` alone does not run GameTests. Client GameTests run only when `runClientGameTest` is requested. Server GameTests check canonical block states and rejection of the isolated GameTest server as a production bridge endpoint. The client test uses a new integrated world and the native peer produced by `test_bridge.py`. With the default Linux single-configuration output:
+With explicit game-test opt-in, the `build` and `check` lifecycles can run server GameTests; `test` alone does not run GameTests. Client GameTests run only when `runClientGameTest` is requested. Server GameTests check canonical block states, real air/full-block/slab collision shapes and rejection of the isolated GameTest server as a production bridge endpoint. The client test uses a new integrated world and the native peer produced by `test_bridge.py`. With the default Linux single-configuration output:
 
 ```console
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true -PpeerExecutable=../build/bridge/native/hc-bridge-peer runClientGameTest

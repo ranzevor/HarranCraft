@@ -10,6 +10,12 @@
 
 A position is the dimension identifier plus signed X/Y/Z coordinates. Out-of-height or world-border positions are invalid; missing worlds and unloaded chunks are unavailable. The adapter does not force chunk loading. Block states use complete canonical identifiers and alphabetically ordered properties, such as `minecraft:oak_log[axis=x]`. Unknown identifiers, duplicate or invalid properties and noncanonical defaults are rejected. Replacing either an existing or a target block entity is unsupported in this batch, preserving its data; block-entity support remains a future capability.
 
+## Collision-shape snapshots
+
+The [collision sampler](../guest/src/main/java/io/ranzevor/harrancraft/MinecraftCollisionShapes.java) queries actual Minecraft server-side `BlockState.getCollisionShape` voxel geometry. `GuestConnections.collisionSnapshot(server, epoch, key)` requires the server thread, an integrated single-player server, a live bridge session with matching epoch and a previously subscribed position. It does not load chunks. Its immutable snapshot carries the canonical block state, epoch, dimension/position and at most 128 finite, positive-volume block-local bounding boxes. Empty shapes are valid; excess boxes return CAPACITY without partial geometry. Invalid positions, missing chunks, unauthorized mode and stale epochs remain distinct failures.
+
+This is an embedding API only; it does not alter version 1 IPC, create Dying Light collision bodies or capture Minecraft render meshes. A future host adapter must account for block-local to world coordinates, physics shape registration and filtering, resource ownership, damage and rollback, and test player/enemy/projectile collision against the original engine.
+
 ## Version 1 frame
 
 [wire.hpp](../include/harrancraft/wire.hpp) is the native layout authority; Java [Frame](../guest/src/main/java/io/ranzevor/harrancraft/bridge/Frame.java) is its matching implementation. Frames are exactly 512 bytes, little-endian. There is no native struct packing on the wire.

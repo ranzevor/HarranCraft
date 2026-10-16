@@ -10,6 +10,12 @@
 
 位置由维度标识和有符号 X/Y/Z 坐标组成。高度或世界边界之外的位置无效，维度不存在或区块未加载时不可用；接口不强制加载区块。方块状态采用完整规范标识及按名称排序的属性，例如 `minecraft:oak_log[axis=x]`。未知标识、重复或无效属性及省略默认属性的非规范形式均被拒绝。本批拒绝替换已有或目标方块实体，以保留其数据；后续方块实体能力并未取消。
 
+## 方块碰撞形状快照
+
+[碰撞采样器](../../guest/src/main/java/io/ranzevor/harrancraft/MinecraftCollisionShapes.java) 读取 Minecraft 服务端真实的 `BlockState.getCollisionShape` 体素形状。`GuestConnections.collisionSnapshot(server, epoch, key)` 要求服务端线程、嵌入式单人服务器、有效桥接会话、匹配代次和已订阅位置，不主动加载区块。不可变快照包含规范方块状态、代次、维度／坐标和最多 128 个具有正体积、有限坐标的方块局部包围盒。无碰撞形状可返回空集合；超限返回 CAPACITY，不能以截断结果冒充完整几何。非法位置、未加载区块、禁止模式和旧代次分别拒绝。
+
+当前属于只读嵌入接口，不修改版本 1 IPC、不在消光创建原生碰撞体，也不是 Minecraft 的渲染网格。后续宿主需实现方块局部坐标变换、物理注册和过滤、所有权、损伤与撤销，并在真实引擎测试玩家、丧尸和投射物碰撞。
+
 ## 版本 1 数据帧
 
 [wire.hpp](../../include/harrancraft/wire.hpp) 是原生布局权威，Java [Frame](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/Frame.java) 提供匹配实现。每帧固定 512 字节、小端编码，不直接传输原生结构体内存。
