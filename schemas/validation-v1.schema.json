@@ -29,6 +29,7 @@
         "missing": {"$ref": "#/$defs/scenarioNames"},
         "unexpected": {"$ref": "#/$defs/scenarioNames"},
         "duplicates": {"$ref": "#/$defs/scenarioNames"},
+        "invalid_records": {"type": "integer", "minimum": 0, "maximum": 64},
         "lan": {"enum": ["requested", "not_requested"]}
       },
       "additionalProperties": false

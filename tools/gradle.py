@@ -320,7 +320,12 @@ def validate(check: Validation, arguments: list[str]) -> None:
                 required_game_tasks.add("runGameTest")
             check.report["unexecuted_game_tasks"] = sorted(required_game_tasks - executed)
             if client:
-                check.report["client_scenarios"] = client_results(text, lan=lan)
+                try:
+                    check.report["client_scenarios"] = client_results(text, lan=lan)
+                except ValueError as error:
+                    check.report["client_scenario_error"] = str(error)
+                    if check.report["status"] == "running":
+                        check.report.update(status="failed", reason=str(error))
             if check.report["status"] == "running":
                 if failed:
                     check.report.update(status="failed", reason="gradle_task_failed")

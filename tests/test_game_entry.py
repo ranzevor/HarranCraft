@@ -118,6 +118,21 @@ class GameEntryTests(unittest.TestCase):
         self.assertNotIn("client_scenarios", self.check.report)
         self.assertIn("-PrunLanTests=false", self.commands["gradle"])
 
+    def test_malformed_record_fails_successful_task(self) -> None:
+        result = self.launch(CLIENT_SCENARIOS | {"invalid_name"})
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["reason"], "client_scenario_incomplete")
+        self.assertEqual(result["client_scenarios"]["invalid_records"], 1)
+        self.assertEqual(result["client_scenarios"]["passed"], sorted(CLIENT_SCENARIOS))
+
+    def test_excessive_records_preserve_a_failed_report(self) -> None:
+        result = self.launch(["reconnect"] * 65)
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["reason"], "client_scenario_limit_exceeded")
+        self.assertEqual(result["client_scenario_error"], "client_scenario_limit_exceeded")
+        self.assertEqual(result["gradle_failed_tasks"], [])
+        self.assertEqual(result["uncompleted_tasks"], [])
+
     def test_lan_without_client_is_rejected_before_preflight(self) -> None:
         for arguments in (
             ["build", "-PrunLanTests=true"],

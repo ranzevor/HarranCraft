@@ -72,6 +72,21 @@ class ClientScenarioTests(unittest.TestCase):
         )
         self.assertEqual(client_results(output, lan=False)["status"], "passed")
 
+    def test_invalid_marker_cannot_pass_with_other_required_scenarios(self) -> None:
+        valid = self.output(CLIENT_SCENARIOS)
+        for malformed in (
+            "bad_name",
+            "reconnect passed",
+            "",
+            "UPPERCASE",
+            "bad.name",
+            "reconnect\tfailed",
+        ):
+            with self.subTest(malformed=malformed):
+                result = client_results(valid + "\nHARRANCRAFT_SCENARIO " + malformed, lan=False)
+                self.assertEqual(result["status"], "failed")
+                self.assertEqual(result["invalid_records"], 1)
+
     def test_scenario_record_overflow_is_a_failure(self) -> None:
         with self.assertRaisesRegex(ValueError, "client_scenario_limit_exceeded"):
             client_results("HARRANCRAFT_SCENARIO reconnect\n" * 65, lan=False)
