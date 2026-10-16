@@ -102,7 +102,8 @@ int main(int argc, char** argv) {
                         == HC_HOST_PROBE_OK, "Repeated module probe failed");
             return result;
         };
-        require(std::memcmp(&library, &library_repeat(), sizeof(library)) == 0,
+        const auto repeated_library = library_repeat();
+        require(std::memcmp(&library, &repeated_library, sizeof(library)) == 0,
                 "Loaded DLL fingerprint changed");
 
         HC_HostImageV1 invalid_name{};
