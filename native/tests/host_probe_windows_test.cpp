@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -64,7 +65,8 @@ int main(int argc, char** argv) {
         Module module(dll);
         auto* address = GetProcAddress(module.value, "hc_probe_current_executable_v1");
         require(address != nullptr, "Versioned host probe export missing");
-        const auto probe = reinterpret_cast<Probe>(address);
+        static_assert(sizeof(Probe) == sizeof(FARPROC));
+        const auto probe = std::bit_cast<Probe>(address);
 
         HC_HostImageV1 unchanged{};
         unchanged.version = 99;
