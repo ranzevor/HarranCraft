@@ -9,6 +9,7 @@
 | Windows 宿主指纹与构建门禁 | Windows x64、C++20 | EXE／已加载 DLL 只读哈希及隔离组合身份、会话代次测试；没有已认可的消光构建 |
 | 消光宿主 | 第一代，Windows x64，单人 | 尚未实现，没有已验证支持的游戏版本 |
 | Minecraft 客体 | 通过 Fabric 运行真实 Minecraft | Ubuntu Fabric 源码编译、重映射及生产 JAR 检查通过；游戏内 GameTest 未运行 |
+| 客户端烘焙模型读取 | Minecraft 1.21.4 固定 Yarn/Fabric | 静态方块模型四边形和相机姿态源码；真实游戏执行及宿主帧关联尚未验收 |
 | 桥接核心及原生测试进程 | JDK 21、C++20、Linux x86_64／Windows x64 | Linux/GCC 与 Windows/MinGW 严格编译、参考帧及真实进程测试通过；MSVC 尚未验收 |
 | 其他消光作品 | 第二代／《困兽》 | 不在首阶段目标内 |
 | 联机模式 | 合作／入侵／其他多人 | 不支持；未来宿主必须在代码中拒绝 |

@@ -23,6 +23,8 @@ The bridge command builds C++ tests, compiles the dependency-free Java protocol 
 
 Geometry wire, async pipe failure/retirement regressions, bounded native incremental reception and Java/C++ cross-process checks are included in `python tools/test_bridge.py`. The separate record format is documented in [Geometry side-channel](geometry.md); it does not invoke a game, transmit to Dying Light or execute GameTests.
 
+Pure-Java render identity and packed-vertex regressions run as part of `python tools/test_bridge.py`. The client-only baked-model sampler and its GameTest compile with the pinned Fabric configuration. [Baked-model observation](render-model.md) documents the client-thread and projection boundaries; CI does not sample live Minecraft geometry.
+
 ## Fabric compilation
 
 ```console

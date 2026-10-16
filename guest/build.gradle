@@ -99,6 +99,9 @@ tasks.register('verifyGuestJar') {
             }
             for (def required : ['fabric.mod.json', 'harrancraft.mixins.json', 'LICENSE_HarranCraft',
                     'io/ranzevor/harrancraft/GuestConnections.class',
+                    'io/ranzevor/harrancraft/MinecraftRenderModels.class',
+                    'io/ranzevor/harrancraft/bridge/RenderFrame.class',
+                    'io/ranzevor/harrancraft/bridge/RenderCaptureSession.class',
                     'io/ranzevor/harrancraft/mixin/WorldChunkMixin.class']) {
                 if (!names.contains(required)) throw new GradleException('Missing mod entry: ' + required)
             }

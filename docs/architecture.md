@@ -12,6 +12,8 @@ The Windows-only [self-image probe](host-observation.md#windows-self-image-probe
 
 An independent [geometry record codec](geometry.md) now encodes actual Fabric collision snapshots into bounded versioned data readable by a native test peer. Its optional, caller-owned guest geometry output is queued off the Minecraft server thread and retired with the main session. A bounded native stream receiver consumes fragmented geometry bytes and retires staged candidates on EOF or protocol failure. This has only controlled-process evidence: no attachment to Dying Light, registered native collider or render pipeline.
 
+The client-only [baked-model observer](render-model.md) reads actual static Minecraft BakedModel vertex quads and camera pose under positive logical epoch/world/camera/frame/capture tokens. It is independent from collision VoxelShapes. This does not yet export render meshes, supply atlas pixel data, calibrate projection/depth or synchronize real Dying Light frames.
+
 ## Planned runtime boundary
 
 The native Dying Light 1 adapter owns host object identities, original-world queries, camera/depth acquisition and accepted engine calls. A real Fabric guest owns Minecraft inventory, blocks, items and Minecraft simulation. A bridge transports versioned snapshots and commands; it is not a second independent authority over either game's health or objects.

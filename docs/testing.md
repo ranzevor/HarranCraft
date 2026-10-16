@@ -31,6 +31,10 @@ The independent [geometry codec](geometry.md) is compiled under strict Java 21 a
 
 The native `geometry-receiver` CTest verifies incremental and coalesced stream framing, byte-capacity bounds, invalid/oversized lengths, truncated EOF, replayed or missing revisions, old epochs, owner-thread refusal and staged collision cleanup. The real Java/C++ `GeometryReceiverProcessTests` also sends bytes through native anonymous pipes, including an actual `GeometryPipe` writer and negative malformed/partial-stream cases. Its reader runs only in a controlled process and does not attach to Dying Light.
 
+## Client render model checks
+
+The pure Java RenderFrameTests exercise fixed Minecraft baked-quad word decoding, finite geometry/UV and camera checks, source immutability, maximum 512 quads, logical frame/capture monotonicity, identity mismatch, wrong dimension, explicit revocation and cross-thread refusal. The client-only MinecraftRenderModels source is compiled against pinned Yarn/Fabric, with GameTest source for the actual model of a placed diamond block and a subsequent air state. Fabric compilation is not GameTest execution or Dying Light frame/depth correspondence. [Rendering scope](render-model.md)
+
 ## Bridge and guest checks
 
 `python tools/test_bridge.py` compiles C++ with strict warnings and Java with `--release 21 -Xlint:all -Werror`, runs the wire/core/lifecycle suites, compares the complete 512-byte reference frame, and exercises three actual Java/C++ pipe scenarios against a controlled world. It checks command ordering, receipt replay/conflicts, generations, capacities, failed sends and cleanup. It does not instantiate Minecraft.

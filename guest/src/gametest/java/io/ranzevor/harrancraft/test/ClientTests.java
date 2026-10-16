@@ -2,8 +2,10 @@ package io.ranzevor.harrancraft.test;
 
 import io.ranzevor.harrancraft.GuestConnections;
 import io.ranzevor.harrancraft.MinecraftCollisionShapes;
+import io.ranzevor.harrancraft.MinecraftRenderModels;
 import io.ranzevor.harrancraft.bridge.Frame;
 import io.ranzevor.harrancraft.bridge.GeometryFrame;
+import io.ranzevor.harrancraft.bridge.RenderFrame;
 import io.ranzevor.harrancraft.bridge.Session;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -37,6 +39,32 @@ public final class ClientTests implements FabricClientGameTest {
                 peer.stage(context, "placed");
                 context.waitFor(client -> client.world != null && client.world.getBlockState(POS).isOf(Blocks.DIAMOND_BLOCK));
                 singleplayer.getClientWorld().waitForChunksRender();
+                context.waitFor(client -> {
+                    if (client.world == null
+                            || !client.world.getBlockState(POS).isOf(Blocks.DIAMOND_BLOCK)
+                            || !client.gameRenderer.getCamera().isReady()) {
+                        return false;
+                    }
+                    var render = MinecraftRenderModels.begin(client, session.epoch(), 1, 1);
+                    try {
+                        var model = render.capture(1, 1,
+                                new Frame.Key("minecraft:overworld",
+                                        POS.getX(), POS.getY(), POS.getZ()));
+                        if (!model.identity().equals(
+                                new RenderFrame.Identity(session.epoch(), 1, 1, 1, 1))
+                                || !model.state().equals("minecraft:diamond_block")
+                                || model.quads().size() < 6
+                                || model.quads().stream().anyMatch(
+                                        quad -> quad.vertices().size() != 4
+                                                || quad.atlas().isEmpty()
+                                                || quad.sprite().isEmpty())) {
+                            throw new AssertionError("Client baked block model was not captured");
+                        }
+                    } finally {
+                        render.stop();
+                    }
+                    return true;
+                });
                 context.takeScreenshot("harrancraft-h2a-placed");
                 singleplayer.getServer().runOnServer(server -> {
                     if (!server.getOverworld().getBlockState(POS).isOf(Blocks.DIAMOND_BLOCK))
@@ -59,6 +87,25 @@ public final class ClientTests implements FabricClientGameTest {
                 peer.finished(context);
                 context.waitFor(client -> client.world != null && client.world.getBlockState(POS).isAir());
                 singleplayer.getClientWorld().waitForChunksRender();
+                context.waitFor(client -> {
+                    if (client.world == null || !client.world.getBlockState(POS).isAir()
+                            || !client.gameRenderer.getCamera().isReady()) {
+                        return false;
+                    }
+                    var render = MinecraftRenderModels.begin(client, session.epoch(), 2, 1);
+                    try {
+                        var model = render.capture(1, 1,
+                                new Frame.Key("minecraft:overworld",
+                                        POS.getX(), POS.getY(), POS.getZ()));
+                        if (!model.state().equals("minecraft:air")
+                                || !model.quads().isEmpty()) {
+                            throw new AssertionError("Air retained old baked geometry");
+                        }
+                    } finally {
+                        render.stop();
+                    }
+                    return true;
+                });
                 context.takeScreenshot("harrancraft-h2a-removed");
                 singleplayer.getServer().runOnServer(server -> {
                     if (!server.getOverworld().getBlockState(POS).isAir()) throw new AssertionError("Removal failed");

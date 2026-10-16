@@ -4,6 +4,7 @@
 
 ### Added
 
+- Client-only Minecraft baked static-block model sampler with retained quad vertices, UV, sprite identities and camera pose; bounded immutable render frames, source-thread/lifetime gates and pure-Java/GameTest source regressions.
 - Bounded native geometry stream receiver with incremental framing, strict session/revision refusal, EOF cleanup and real Java/C++ pipe integration regressions.
 - Session-bound, caller-owned asynchronous guest collision geometry pipe with bounded output, initial GET and subscribed-change publication, cancellation and resource-retirement tests.
 - Separate version 1 Java/C++ collision geometry records with bounded double-precision AABBs, strict decode, golden-byte comparison and native process tests; preserve the 512-byte block protocol.
@@ -39,6 +40,7 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增 Minecraft 客户端静态烘焙模型采样、真实四边形顶点／UV／精灵标识及相机姿态，并完善有界不可变快照、线程／代次门禁和 Java／GameTest 源码回归。
 - 新增有界原生几何流接收器、增量分帧、会话／修订号拒绝、EOF 清理及真实 Java／C++ 管道回归。
 - 新增与会话绑定的客体异步几何输出、GET／订阅变化发布、容量门禁、取消回收及独立故障测试。
 - 新增独立版本 1 Java／C++ 碰撞几何记录、有界双精度包围盒、严格解码、跨语言参考帧及原生进程测试；保留现有 512 字节方块协议。
