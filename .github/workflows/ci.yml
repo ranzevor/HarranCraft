@@ -155,6 +155,8 @@ jobs:
           @echo off
           reg add "HKCU\Software\Microsoft\VisualStudio\Telemetry" /v TurnOffSwitch /t REG_DWORD /d 1 /f
           if errorlevel 1 exit /b 1
+          reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\VSCommon\17.0\SQM" /v OptIn /t REG_DWORD /d 0 /f
+          if errorlevel 1 exit /b 1
           set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
           if not exist "%VSWHERE%" exit /b 1
           for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSPATH=%%i"
