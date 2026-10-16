@@ -19,7 +19,7 @@ python tools/package.py
 python tools/test_bridge.py
 ```
 
-The bridge command builds C++ tests, compiles the dependency-free Java protocol core, runs core/lifecycle regressions, compares a complete Java/C++ reference frame and starts actual Java/C++ peers against a controlled world. It also runs `hc-pipe-peer` fault scenarios and checks actual worker/process retirement. Linux descriptor counts are measured through `/proc/self/fd`; an unavailable measurement is reported separately. It does not start Minecraft. The pull-request CI runs these game-free Java/C++ process checks on Ubuntu with JDK 21 / GCC 14 and on Windows Server 2025 with JDK 21 / MSVC. Each platform has an independent job and result. Neither job resolves Fabric dependencies or starts Minecraft; real game validation remains separate.
+The bridge command builds C++ tests, compiles the dependency-free Java protocol core, runs core/lifecycle regressions, compares a complete Java/C++ reference frame and starts actual Java/C++ peers against a controlled world. It also runs `hc-pipe-peer` fault scenarios and checks actual worker/process retirement. Linux descriptor counts are measured through `/proc/self/fd`; an unavailable measurement is reported separately. It does not start Minecraft. The pull-request CI runs these game-free Java/C++ process checks on Ubuntu with JDK 21 / GCC 14 and on Windows Server 2025 with JDK 21 / MinGW x64 GCC / Ninja. Each platform has an independent job and result. The Windows job selects the native MinGW compiler explicitly; MSVC remains a separate unverified toolchain. Neither job resolves Fabric dependencies or starts Minecraft; real game validation remains separate.
 
 ## Fabric compilation
 

@@ -74,7 +74,7 @@ jobs:
           python tools/test_bridge.py --hc-timeout 600
 
   bridge-windows:
-    name: Windows / Java and C++ bridge
+    name: Windows / MinGW Java and C++ bridge
     runs-on: windows-2025
     timeout-minutes: 20
     env:
@@ -95,6 +95,14 @@ jobs:
           if (-not $jdk -or -not (Test-Path (Join-Path $jdk 'bin/javac.exe'))) {
             throw 'JDK 21 is not available'
           }
+          $compiler = (Get-Command g++.exe -ErrorAction Stop).Source
+          $generator = (Get-Command ninja.exe -ErrorAction Stop).Source
+          $target = & $compiler -dumpmachine
+          if ($LASTEXITCODE -ne 0 -or $target -notmatch '^x86_64-.*mingw') {
+            throw 'A native Windows x64 MinGW compiler is required'
+          }
+          $env:CXX = $compiler
+          $env:CMAKE_GENERATOR = 'Ninja'
           $env:JAVA_HOME = $jdk
           $env:Path = "$(Join-Path $jdk 'bin');$env:Path"
           python tools/test_bridge.py --hc-timeout 900
