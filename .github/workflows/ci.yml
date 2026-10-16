@@ -134,8 +134,8 @@ jobs:
           }
 
   bridge-msvc:
-    name: Windows / MSVC Ninja Java and C++ bridge
-    runs-on: windows-2025
+    name: Windows 2022 / MSVC Ninja Java and C++ bridge
+    runs-on: windows-2022
     timeout-minutes: 20
     env:
       PYTHONIOENCODING: utf-8
