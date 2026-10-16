@@ -133,6 +133,64 @@ jobs:
             }
           }
 
+  bridge-msvc:
+    name: Windows / MSVC Ninja Java and C++ bridge
+    runs-on: windows-2025
+    timeout-minutes: 20
+    env:
+      PYTHONIOENCODING: utf-8
+      VSCMD_SKIP_SENDTELEMETRY: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - name: Verify native MSVC bridge processes
+        shell: cmd
+        run: |
+          @echo off
+          set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+          if not exist "%VSWHERE%" exit /b 1
+          for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSPATH=%%i"
+          if not defined VSPATH exit /b 1
+          if not exist "%VSPATH%\Common7\Tools\VsDevCmd.bat" exit /b 1
+          call "%VSPATH%\Common7\Tools\VsDevCmd.bat" -no_logo -arch=x64 -host_arch=x64
+          if errorlevel 1 exit /b 1
+          where cl.exe
+          if errorlevel 1 exit /b 1
+          where ninja.exe
+          if errorlevel 1 exit /b 1
+          set "CMAKE_GENERATOR=Ninja"
+          set "CC=cl"
+          set "CXX=cl"
+          set "JAVA_HOME=%JAVA_HOME_21_X64%"
+          if not exist "%JAVA_HOME%\bin\javac.exe" exit /b 1
+          set "PATH=%JAVA_HOME%\bin;%PATH%"
+          python tools/test_bridge.py --hc-timeout 900
+          if errorlevel 1 exit /b 1
+      - name: Inspect MSVC bridge failure
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem reports/validation -Recurse -Filter result.json -ErrorAction SilentlyContinue | ForEach-Object {
+            $report = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+            Write-Output ("status={0} reason={1} failed_stage={2}" -f $report.status, $report.reason, $report.failed_stage)
+            foreach ($stage in $report.stages) {
+              Write-Output ("stage={0} status={1} exit={2} reason={3} cleanup={4}" -f $stage.name, $stage.status, $stage.exit_code, $stage.reason, $stage.cleanup)
+              if ($stage.remaining_processes) {
+                Write-Output ("remaining_processes=" + ($stage.remaining_processes -join ','))
+              }
+              if ($stage.status -ne 'passed' -and $stage.stderr) {
+                $log = Join-Path $_.DirectoryName $stage.stderr
+                if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 50 }
+              }
+            }
+          }
+
   fabric-build:
     name: Ubuntu / Fabric compile and production JAR
     runs-on: ubuntu-24.04
