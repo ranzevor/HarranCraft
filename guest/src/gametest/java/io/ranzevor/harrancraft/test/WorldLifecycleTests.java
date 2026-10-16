@@ -164,6 +164,7 @@ public final class WorldLifecycleTests implements FabricClientGameTest {
                     world.getServer().runOnServer(server -> require(
                             ending.isWelcomed() && ending.watchedCount() == 1, "Observer was not live before world exit"));
                     world.getServer().runCommand("setblock 0 80 0 minecraft:gold_block");
+                    observer.stage(context, "observed");
                     first = world.getServer().computeOnServer(server -> server);
                     save = world.getWorldSave();
                 }

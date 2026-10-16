@@ -15,6 +15,14 @@ public final class ClientTests implements FabricClientGameTest {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
             singleplayer.getServer().runCommand("gamemode spectator @a");
             singleplayer.getServer().runCommand("tp @a 0.5 79 -4 0 0");
+            for (int tick = 0; tick < 200; ++tick) {
+                if (singleplayer.getServer().computeOnServer(server -> server.getOverworld().isChunkLoaded(POS))) break;
+                context.waitTick();
+            }
+            singleplayer.getServer().runOnServer(server -> {
+                if (!server.getOverworld().isChunkLoaded(POS))
+                    throw new AssertionError("Test position did not load");
+            });
             singleplayer.getServer().runCommand("setblock 0 80 0 minecraft:air");
             singleplayer.getClientWorld().waitForChunksRender();
             context.takeScreenshot("harrancraft-h2a-empty");
