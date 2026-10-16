@@ -107,6 +107,14 @@ jobs:
             Write-Output ("status={0} reason={1} failed_stage={2}" -f $data.status, $data.reason, $data.failed_stage)
             foreach ($stage in $data.stages) {
               Write-Output ("stage={0} status={1} exit={2} reason={3}" -f $stage.name, $stage.status, $stage.exit_code, $stage.reason)
+              if ($stage.status -ne 'passed') {
+                Write-Output ("cleanup={0} descendants_terminated={1} error_type={2} cleanup_error_type={3} elapsed_seconds={4}" -f $stage.cleanup, $stage.descendants_terminated, $stage.error_type, $stage.cleanup_error_type, $stage.elapsed_seconds)
+                $metadata = Join-Path $_.DirectoryName ($stage.name + '.process.json')
+                if (Test-Path -LiteralPath $metadata) {
+                  $process = Get-Content -LiteralPath $metadata -Raw | ConvertFrom-Json
+                  Write-Output ("supervisor_exit={0} supervisor_cleanup={1} supervisor_descendants={2} supervisor_error={3}" -f $process.exit_code, $process.cleanup, $process.descendants_terminated, $process.error_type)
+                }
+              }
               if ($stage.status -ne 'passed' -and $stage.stderr) {
                 $log = Join-Path $_.DirectoryName $stage.stderr
                 if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 60 }
