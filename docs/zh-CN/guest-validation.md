@@ -62,7 +62,7 @@ python tools/test_bridge.py --hc-timeout 600
 python tools/gradle.py --hc-timeout 1800 build
 ```
 
-时限是包括工具探测和启动器准备在内的整次执行预算；桥接命令另有每阶段 120 秒上限。超时或中断只取消本次持有的进程树，并进行有界清理。Linux 使用独立进程组和负责回收后代的子进程；Windows 先将等待放行的辅助进程加入 Job Object，再放行命令。父进程返回 0 但遗留后代仍判失败，即使后续清理成功。共享的 `build/.validation-lock` 阻止两个入口同时修改相同构建输出；不会删除或抢占已有锁。移除失效锁前须核对其所有者记录和仍在运行的验收。
+时限是包括工具探测和启动器准备在内的整次执行预算；桥接命令另有每阶段 120 秒上限。超时或中断只取消本次持有的进程树，并进行有界清理。Linux 使用独立进程组和负责回收后代的子进程；Windows 先将等待放行的辅助进程加入 Job Object，再放行命令。只有剩余进程均为 MSVC 的 `vctip.exe` 遥测辅助进程时，才允许在本次调用时限内额外等待最多 30 秒自然退出。任何后代超过对应期限仍存活都将被回收并使验收失败，即使父进程退出码为 0 且清理成功。共享的 `build/.validation-lock` 阻止两个入口同时修改相同构建输出；不会删除或抢占已有锁。移除失效锁前须核对其所有者记录和仍在运行的验收。
 
 每次执行生成独立的 `reports/validation/<run>/result.json`，终端以 JSON 返回仓库相对位置。报告契约见[版本 1 Schema](../../schemas/validation-v1.schema.json)。状态区分 `blocked`、`failed`、`timed_out`、`interrupted`、`passed` 和 `incomplete`；仅预检成功为 `preflight_passed`，实际执行阶段仍为 `not_run`。每个已执行阶段分别保留标准输出、标准错误、实际退出码、耗时及清理结果。Java 类编译到本次独立目录，不复用上次测试类；上述原生对端位置不变。
 
