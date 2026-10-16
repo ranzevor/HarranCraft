@@ -4,6 +4,7 @@
 
 ### Added
 
+- Separate version 1 Java/C++ collision geometry records with bounded double-precision AABBs, strict decode, golden-byte comparison and native process tests; preserve the 512-byte block protocol.
 - Real Minecraft collision VoxelShape sampling for subscribed blocks, bounded immutable AABBs, session/epoch checks and GameTest source coverage.
 - Bounded C++20 host EXE/DLL composite build allowlisting with camera/session revocation, epoch recovery and native/Windows-process regressions.
 - Read-only Windows x64 host-image probe DLL with versioned C ABI, bounded CNG SHA-256 of the current executable and already-loaded DLLs, strict PE validation and native/Python cross-checks.
@@ -36,6 +37,7 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增独立版本 1 Java／C++ 碰撞几何记录、有界双精度包围盒、严格解码、跨语言参考帧及原生进程测试；保留现有 512 字节方块协议。
 - 新增 Minecraft 真实 VoxelShape 碰撞几何采样、有界不可变包围盒、会话／代次校验及 GameTest 源码。
 - 新增 C++20 宿主 EXE／DLL 组合允许列表、相机／会话撤销、代次恢复及原生／Windows 进程回归。
 - 新增 Windows x64 只读宿主身份探测 DLL、版本化 C ABI、主程序及已加载 DLL 的受限 CNG 哈希、严格 PE 检查及原生／Python 对照验证。

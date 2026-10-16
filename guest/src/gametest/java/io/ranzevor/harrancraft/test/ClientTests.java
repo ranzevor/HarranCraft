@@ -3,6 +3,7 @@ package io.ranzevor.harrancraft.test;
 import io.ranzevor.harrancraft.GuestConnections;
 import io.ranzevor.harrancraft.MinecraftCollisionShapes;
 import io.ranzevor.harrancraft.bridge.Frame;
+import io.ranzevor.harrancraft.bridge.GeometryFrame;
 import io.ranzevor.harrancraft.bridge.Session;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -48,6 +49,10 @@ public final class ClientTests implements FabricClientGameTest {
                             || !geometry.snapshot().boxes().getFirst().equals(
                                     new MinecraftCollisionShapes.Bounds(0, 0, 0, 1, 1, 1))) {
                         throw new AssertionError("Authoritative collision snapshot was not captured");
+                    }
+                    GeometryFrame frame = geometry.snapshot().geometryFrame(1);
+                    if (!GeometryFrame.decode(frame.encode()).equals(frame)) {
+                        throw new AssertionError("Minecraft collision geometry was not preserved");
                     }
                 });
                 singleplayer.getServer().runCommand("setblock 0 80 0 minecraft:gold_block");

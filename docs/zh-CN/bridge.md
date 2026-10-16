@@ -16,6 +16,8 @@
 
 当前属于只读嵌入接口，不修改版本 1 IPC、不在消光创建原生碰撞体，也不是 Minecraft 的渲染网格。后续宿主需实现方块局部坐标变换、物理注册和过滤、所有权、损伤与撤销，并在真实引擎测试玩家、丧尸和投射物碰撞。
 
+[独立几何传输协议](geometry.md)使用不同的版本化记录承载真实 Minecraft 碰撞 AABB，不改变 512 字节方块命令帧。跨进程测试不等于消光原生物理验收。
+
 ## 版本 1 数据帧
 
 [wire.hpp](../../include/harrancraft/wire.hpp) 是原生布局权威，Java [Frame](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/Frame.java) 提供匹配实现。每帧固定 512 字节、小端编码，不直接传输原生结构体内存。

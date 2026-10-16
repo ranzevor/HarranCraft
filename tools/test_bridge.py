@@ -33,10 +33,15 @@ STAGES = [
     "java-build",
     "core-tests",
     "lifecycle-tests",
+    "geometry-java-tests",
     "native-frame",
+    "geometry-native-frame",
+    "geometry-java-frame",
+    "geometry-frame-comparison",
     "java-frame",
     "frame-comparison",
     "process-tests",
+    "geometry-process-tests",
     "pipe-tests",
     "observation-tests",
 ]
@@ -111,6 +116,7 @@ def validate(check: Validation, arguments: list[str]) -> None:
     )
     check.run("core-tests", ["java", "-cp", str(java), f"{PACKAGE}.CoreTests"])
     check.run("lifecycle-tests", ["java", "-cp", str(java), f"{PACKAGE}.LifecycleTests"])
+    check.run("geometry-java-tests", ["java", "-cp", str(java), f"{PACKAGE}.GeometryFrameTests"])
     bin_dir = native / "Debug" if (native / "Debug").is_dir() else native
     extension = ".exe" if os.name == "nt" else ""
     peer = bin_dir / f"hc-bridge-peer{extension}"
@@ -129,7 +135,37 @@ def validate(check: Validation, arguments: list[str]) -> None:
     check.save()
     if comparison["status"] == "failed":
         check.reject("wire_frame_mismatch", "failed")
+    native_geometry = check.run(
+        "geometry-native-frame",
+        [str(bin_dir / f"hc-geometry-wire-test{extension}"), "--golden"],
+    )
+    java_geometry = check.run(
+        "geometry-java-frame",
+        ["java", "-cp", str(java), f"{PACKAGE}.GeometryFrameTests", "--golden"],
+    )
+    geometry_check = next(
+        stage for stage in check.report["stages"] if stage["name"] == "geometry-frame-comparison"
+    )
+    geometry_check["status"] = (
+        "passed"
+        if re.fullmatch(r"[0-9a-f]{736}", native_geometry.strip())
+        and native_geometry.strip() == java_geometry.strip()
+        else "failed"
+    )
+    check.save()
+    if geometry_check["status"] != "passed":
+        check.reject("geometry_frame_mismatch", "failed")
     check.run("process-tests", ["java", "-cp", str(java), f"{PACKAGE}.ProcessTests", str(peer)])
+    check.run(
+        "geometry-process-tests",
+        [
+            "java",
+            "-cp",
+            str(java),
+            f"{PACKAGE}.GeometryProcessTests",
+            str(bin_dir / f"hc-geometry-peer{extension}"),
+        ],
+    )
     check.run(
         "pipe-tests",
         [

@@ -16,6 +16,8 @@ The [collision sampler](../guest/src/main/java/io/ranzevor/harrancraft/Minecraft
 
 This is an embedding API only; it does not alter version 1 IPC, create Dying Light collision bodies or capture Minecraft render meshes. A future host adapter must account for block-local to world coordinates, physics shape registration and filtering, resource ownership, damage and rollback, and test player/enemy/projectile collision against the original engine.
 
+The [geometry side-channel](geometry.md) uses a separate versioned record format for real Minecraft collision AABBs; it never repurposes the 512-byte block command frame. Its process tests do not establish Dying Light native physics.
+
 ## Version 1 frame
 
 [wire.hpp](../include/harrancraft/wire.hpp) is the native layout authority; Java [Frame](../guest/src/main/java/io/ranzevor/harrancraft/bridge/Frame.java) is its matching implementation. Frames are exactly 512 bytes, little-endian. There is no native struct packing on the wire.

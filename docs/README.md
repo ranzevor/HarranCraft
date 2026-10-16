@@ -9,6 +9,7 @@
 | Understand implemented versus planned platforms | [Compatibility](compatibility.md) |
 | Understand state ownership and integration boundaries | [Architecture](architecture.md) |
 | Integrate a private-pipe peer and handle recovery | [Block bridge](bridge.md) |
+| Encode and transfer Minecraft collision volumes | [Geometry side-channel](geometry.md) |
 | Build the Fabric guest and run isolated game tests | [Local guest validation](guest-validation.md) |
 | Follow complete gameplay milestones | [Roadmap](roadmap.md) |
 | Classify and reproduce verification | [Testing](testing.md) |

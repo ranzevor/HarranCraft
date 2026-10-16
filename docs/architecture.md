@@ -10,6 +10,8 @@ The H2-A source adds a Fabric block adapter, chunk-change observation, a Java se
 
 The Windows-only [self-image probe](host-observation.md#windows-self-image-probe) supplies read-only on-disk main-executable fingerprints through a fixed C ABI. It does not establish the active engine build from mapped memory or prove session mode or callback safety. The independent [H1 observation core](host-observation.md) checks explicit executable fingerprints, positively asserted single-player/read-phase evidence, session generations and exact world/camera/frame/capture correspondence. Its host-to-guest clip-space projection is mathematical only; it neither locates Dying Light callbacks nor reads the game's camera or depth resources. No game build is accepted by default. The [composite host build gate](host-observation.md#composite-host-build-identity) matches an EXE and its required DLL fingerprints together, revoking camera/session identity after any missing or changed module.
 
+An independent [geometry record codec](geometry.md) now encodes actual Fabric collision snapshots into bounded versioned data readable by a native test peer. It is not yet a live producer connection, host collider registration or scene render pipeline.
+
 ## Planned runtime boundary
 
 The native Dying Light 1 adapter owns host object identities, original-world queries, camera/depth acquisition and accepted engine calls. A real Fabric guest owns Minecraft inventory, blocks, items and Minecraft simulation. A bridge transports versioned snapshots and commands; it is not a second independent authority over either game's health or objects.

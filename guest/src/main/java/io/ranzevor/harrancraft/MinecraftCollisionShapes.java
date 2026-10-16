@@ -2,6 +2,7 @@ package io.ranzevor.harrancraft;
 
 import io.ranzevor.harrancraft.bridge.BlockWorld;
 import io.ranzevor.harrancraft.bridge.Frame;
+import io.ranzevor.harrancraft.bridge.GeometryFrame;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -33,6 +34,16 @@ public final class MinecraftCollisionShapes {
                 throw new IllegalArgumentException("Invalid collision snapshot identity");
             }
             boxes = List.copyOf(boxes);
+        }
+
+        public GeometryFrame geometryFrame(long revision) {
+            List<GeometryFrame.Box> converted = new ArrayList<>(boxes.size());
+            for (Bounds bounds : boxes) {
+                converted.add(new GeometryFrame.Box(
+                        bounds.minX(), bounds.minY(), bounds.minZ(),
+                        bounds.maxX(), bounds.maxY(), bounds.maxZ()));
+            }
+            return GeometryFrame.snapshot(epoch, revision, key, canonicalState, converted);
         }
     }
 

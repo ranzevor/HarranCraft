@@ -18,7 +18,7 @@ Milestones describe required outcomes rather than a release schedule. Work indep
 
 **H2-A — Block events and bidirectional IPC:** source implementation and controlled Java/C++ process tests are available. Pinned dependency resolution, Fabric compilation and production JAR checks now pass on Ubuntu/JDK 21 in [CI #38892925451](https://github.com/ranzevor/HarranCraft/actions/runs/38892925451). Complete the remaining [local validation](guest-validation.md): server/client GameTests, Windows Fabric build, screenshots and real world/mode transitions; Linux and Windows/MinGW native process checks have also passed. The guest accepts embedded private pipes; a user launcher and Dying Light endpoint are not part of this batch.
 
-**H2-B — Real guest graphics output:** follows genuine H2-A results. Produce real Minecraft render/geometry output with camera, frame and lifetime identity; subsequent H3 must establish original-world occlusion and native collision.
+**H2-B — Real guest graphics output:** Follows genuine H2-A results. Collision-shape records can be encoded separately from v1, but these physical volumes do not replace Minecraft render geometry, host scene depth or registered native collision. Produce real Minecraft render/geometry output with camera, frame and lifetime identity; subsequent H3 must establish original-world occlusion and native collision.
 
 H1 observation experiments remain independently testable. Keep host-changing code gated by actual build, mode and engine-phase evidence. Continue source and protocol work without waiting for an unrelated game environment.
 
