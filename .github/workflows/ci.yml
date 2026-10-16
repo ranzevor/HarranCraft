@@ -47,3 +47,28 @@ jobs:
       - name: Compare native Windows version metadata
         if: runner.os == 'Windows'
         run: python tools/windows_smoke.py
+
+  bridge:
+    name: Ubuntu / Java and C++ bridge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONIOENCODING: utf-8
+      CC: gcc-14
+      CXX: g++-14
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Verify Java and C++ bridge processes
+        shell: bash
+        run: |
+          test -x "$JAVA_HOME_21_X64/bin/javac"
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          python tools/test_bridge.py --hc-timeout 600

@@ -19,7 +19,7 @@ python tools/package.py
 python tools/test_bridge.py
 ```
 
-桥接命令构建 C++ 测试、编译无第三方依赖的 Java 协议核心、执行核心和生命周期回归、比对完整跨语言参考帧，并启动真实 Java／C++ 进程访问受控世界；还会运行 `hc-pipe-peer` 故障场景并确认工作线程及进程实际结束。Linux 通过 `/proc/self/fd` 测量文件描述符数量，不支持时单独报告该测量未提供。命令不会启动 Minecraft；应分别在 Linux 和目标 Windows 工具链运行。
+桥接命令构建 C++ 测试、编译无第三方依赖的 Java 协议核心、执行核心和生命周期回归、比对完整跨语言参考帧，并启动真实 Java／C++ 进程访问受控世界；还会运行 `hc-pipe-peer` 故障场景并确认工作线程及进程实际结束。Linux 通过 `/proc/self/fd` 测量文件描述符数量，不支持时单独报告该测量未提供。命令不会启动 Minecraft。PR 的 CI 还在 Ubuntu 上使用 JDK 21 和 GCC 14 执行这些真实 Java／C++ 进程测试，不解析 Fabric 依赖，也不启动游戏；目标 Windows Java／C++ 桥接执行仍须单独验收。
 
 ## Fabric 编译
 
