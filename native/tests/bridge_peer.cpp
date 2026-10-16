@@ -114,6 +114,29 @@ public:
         require(current.status == Status::ok && current.state == "minecraft:air", "Stale command had effects");
         require(events.empty(), "Stale command emitted an event");
     }
+    void observe() {
+        auto initial = exchange(command(Kind::get));
+        require(initial.status == Status::ok && initial.state == "minecraft:air", "Expected initial air");
+        std::cerr << "{\"stage\":\"observing\"}\n" << std::flush;
+        std::string current = initial.state;
+        for (;;) {
+            Bytes bytes{};
+            std::cin.read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+            if (std::cin.gcount() == 0 && std::cin.eof()) break;
+            require(std::cin.gcount() == static_cast<std::streamsize>(bytes.size()), "Partial observed frame");
+            auto frame = decode(bytes);
+            require(frame.status == Status::ok && frame.origin == guest_origin && frame.cause == 0,
+                    "Unexpected observed mutation");
+            require(frame.dimension == "minecraft:overworld" && frame.x == 0 && frame.y == 80 && frame.z == 0,
+                    "Observed event targeted an unsubscribed position");
+            require(frame.expected == current && frame.state != current, "Observed state transition mismatch");
+            current = frame.state;
+            event(frame);
+            std::cerr << "{\"stage\":\"observed\",\"event\":" << frame.id << "}\n" << std::flush;
+        }
+        std::cerr << "{\"stage\":\"passed\",\"epoch\":" << epoch
+                  << ",\"events\":" << events.size() << "}\n" << std::flush;
+    }
     void finish() {
         send(command(Kind::close));
         std::cerr << "{\"stage\":\"passed\",\"epoch\":" << epoch
@@ -141,6 +164,7 @@ int main(int argc, char** argv) {
             return 0;
         }
         Scenario test(argc == 3 ? number(argv[2]) : 0);
+        if (scenario == "observe") { test.observe(); return 0; }
         if (scenario == "cycle") test.cycle();
         else if (scenario == "stale") test.stale();
         else throw std::invalid_argument("Unknown peer scenario");

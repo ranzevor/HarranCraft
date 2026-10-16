@@ -14,8 +14,10 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 if __package__:
+    from .game_scenarios import client_results, lan_requested
     from .validation import Validation, collect_evidence, digest, entry, evidence_snapshot
 else:
+    from game_scenarios import client_results, lan_requested
     from validation import Validation, collect_evidence, digest, entry, evidence_snapshot
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -168,7 +170,12 @@ def validate(check: Validation, arguments: list[str]) -> None:
             tasks.add(task)
         elif argument.startswith("-P"):
             name, separator, value = argument[2:].partition("=")
-            if name not in {"runMinecraftTests", "acceptMinecraftEula", "peerExecutable"}:
+            if name not in {
+                "runMinecraftTests",
+                "acceptMinecraftEula",
+                "peerExecutable",
+                "runLanTests",
+            }:
                 check.reject("validation_property_unsupported")
             if name in supplied:
                 check.reject("duplicate_validation_property")
@@ -189,20 +196,28 @@ def validate(check: Validation, arguments: list[str]) -> None:
         check.reject("validation_task_unsupported")
     enabled = supplied.get("runMinecraftTests", "false") == "true"
     game = enabled or bool(tasks & {"runGameTest", "runClientGameTest"})
-    client = "runClientGameTest" in tasks or (enabled and bool(tasks & {"build", "check", "test"}))
+    client = "runClientGameTest" in tasks
     check.report["requested_tasks"] = sorted(tasks)
     check.report["minecraft_execution"] = game
     if game and not (enabled and supplied.get("acceptMinecraftEula") == "true"):
         check.reject("minecraft_opt_in_required")
+    try:
+        lan = lan_requested(supplied, enabled=enabled, client=client)
+    except ValueError as error:
+        check.reject(str(error))
+    check.report["lan_execution"] = lan
     # Command-line project properties override ambient Gradle properties and environment values.
     arguments = [
         value
         for value in arguments
-        if not value.startswith(("-PrunMinecraftTests=", "-PacceptMinecraftEula="))
+        if not value.startswith(
+            ("-PrunMinecraftTests=", "-PacceptMinecraftEula=", "-PrunLanTests=")
+        )
         and value not in {"--no-daemon", "--console=plain"}
     ]
     selected = "true" if enabled else "false"
     arguments.extend([f"-PrunMinecraftTests={selected}", f"-PacceptMinecraftEula={selected}"])
+    arguments.append("-PrunLanTests=" + ("true" if lan else "false"))
     check.preflight(("java", "javac"))
     properties = {}
     for line in (ROOT / "guest/gradle.properties").read_text(encoding="utf-8").splitlines():
@@ -301,9 +316,11 @@ def validate(check: Validation, arguments: list[str]) -> None:
             }
             check.report["uncompleted_tasks"] = sorted(tasks - completed)
             required_game_tasks = tasks & {"runGameTest", "runClientGameTest"}
-            if enabled and tasks & {"build", "check", "test"}:
-                required_game_tasks = {"runGameTest", "runClientGameTest"}
+            if enabled and tasks & {"build", "check"}:
+                required_game_tasks.add("runGameTest")
             check.report["unexecuted_game_tasks"] = sorted(required_game_tasks - executed)
+            if client:
+                check.report["client_scenarios"] = client_results(text, lan=lan)
             if check.report["status"] == "running":
                 if failed:
                     check.report.update(status="failed", reason="gradle_task_failed")
@@ -311,6 +328,8 @@ def validate(check: Validation, arguments: list[str]) -> None:
                     check.report.update(status="failed", reason="game_task_not_executed")
                 elif tasks - completed:
                     check.report.update(status="failed", reason="requested_task_not_completed")
+                elif client and check.report["client_scenarios"]["status"] != "passed":
+                    check.report.update(status="failed", reason="client_scenario_incomplete")
         check.save()
     if stage["status"] != "passed":
         check.reject("required_evidence_missing", "failed")

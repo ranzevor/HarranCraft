@@ -37,7 +37,7 @@ Read the [Minecraft EULA](https://www.minecraft.net/eula) before running game te
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true runGameTest
 ```
 
-Server GameTests check canonical block states and rejection of the isolated GameTest server as a production bridge endpoint. The client test uses a new integrated world and the native peer produced by `test_bridge.py`. With the default Linux single-configuration output:
+With explicit game-test opt-in, the `build` and `check` lifecycles can run server GameTests; `test` alone does not run GameTests. Client GameTests run only when `runClientGameTest` is requested. Server GameTests check canonical block states and rejection of the isolated GameTest server as a production bridge endpoint. The client test uses a new integrated world and the native peer produced by `test_bridge.py`. With the default Linux single-configuration output:
 
 ```console
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true -PpeerExecutable=../build/bridge/native/hc-bridge-peer runClientGameTest
@@ -78,6 +78,24 @@ The validation entry accepts exact root tasks `build`, `check`, `test`, `runGame
 
 Supported Gradle options are `--offline`, `--refresh-dependencies`, `--rerun-tasks`, `--stacktrace`, `--full-stacktrace`, `--info`, `--build-cache`, `--no-build-cache`, `--parallel`, `--no-parallel`, `--continue`, `--no-daemon`, `--console=plain` and `--max-workers=N` (1–9999). Other options, including help/version-only commands, daemon control, build scans, alternate property syntax and option abbreviations, are rejected before preflight. The wrapper fixes non-daemon execution and plain console output.
 
-Project properties use `-Pname=value`; accepted names are `runMinecraftTests`, `acceptMinecraftEula` and `peerExecutable`. Duplicate properties and non-boolean game switches are rejected. Both game switches must be explicitly true to enable game execution. Otherwise the invocation supplies both as false, overriding ambient environment or user-level Gradle property values. The existing peer-file and graphics checks still apply to client tests.
+Project properties use `-Pname=value`; accepted names are `runMinecraftTests`, `acceptMinecraftEula`, `peerExecutable` and `runLanTests`. Duplicate properties and non-boolean game switches are rejected. Both game switches must be explicitly true to enable game execution. Otherwise the invocation supplies both as false, overriding ambient environment or user-level Gradle property values. The existing peer-file and graphics checks still apply to client tests.
 
 Tool probes retain their stdout/stderr references, exit code, elapsed time, cleanup outcome and original failure details under `tools`. Failed probes, missing prerequisites, timeouts and interruptions keep their distinct outcomes; a successful process with an unrecognized version is a failed probe check. Source-identity timeouts remain `timed_out`. Interrupted or failed preflight does not leave a `running` state in the final report.
+
+## World lifecycle and isolated LAN acceptance
+
+Client execution also runs `WorldLifecycleTests` in disposable worlds. It repeats native block round trips on three fresh connections, rejects attachment from the game-test thread without consuming the offered transport, and verifies that refusing to replace a chest preserves its block-entity identity and seven-diamond inventory fixture. An observer remains attached while a world closes: the registered lifecycle callback, not a test-side detach, must retire the connection. The generated save is reopened and its gold block verified before further mutation; both reopened and replacement worlds must reject a prior epoch and accept a new block round trip. No existing save is opened.
+
+The native `observe` scenario subscribes to one loaded position, receives independently originated events and waits for the guest to close its stream. `ObservationTests` checks this peer with real processes, including invalid epoch/sequence/origin/type and partial-frame rejection, followed by repeated retirement. Its supplied guest frames are not Minecraft execution.
+
+LAN validation requires a separate explicit opt-in and an isolated network: it calls the real `openToLan` API, temporarily opens a listening port and starts Minecraft LAN discovery. It does not connect another player or modify a real installation. From the repository root, using the default Windows Visual Studio peer output:
+
+```console
+python tools/gradle.py --hc-timeout 1800 -PrunMinecraftTests=true -PacceptMinecraftEula=true -PrunLanTests=true -PpeerExecutable=../build/bridge/native/Debug/hc-bridge-peer.exe runClientGameTest
+```
+
+On Linux, use `../build/bridge/native/hc-bridge-peer`. `runLanTests` is accepted only with enabled client tests and defaults to an explicit false on every wrapper invocation, overriding ambient project properties. Ordinary client tests do not open LAN. The LAN case checks actual mode rejection, automatic end-tick closure of the native observer, refusal of a new caller-owned transport and an unchanged block. A separate controlled command queue uses the real Minecraft adapter and actual post-LAN mode to verify that a queued SET is discarded; this is not a native-pipe queue measurement. After closing the generated world, the server and discovery workers must end and the listening port must be bindable again. A fresh private world must then reject the old epoch and complete a new round trip.
+
+Each completed client scenario emits `HARRANCRAFT_SCENARIO <name>` in that invocation's Gradle output. The report's `client_scenarios` records passed, missing, unexpected and duplicate names; successful tasks and screenshots alone are insufficient. Default requirements are `block-roundtrip`, `reconnect`, `block-entity-preservation`, `thread-ownership`, `world-stop`, `world-reopen` and `world-replacement`. Explicit LAN execution additionally requires `lan-revocation` and `lan-recovery`. Missing or duplicate completion records fail validation. `lan_execution=false` and `lan=not_requested` do not establish LAN acceptance. Screenshot visual review remains separate.
+
+These game-test sources require the configured Fabric build and actual client/server execution. API references: [Yarn 1.21.4+build.8 integrated server](https://maven.fabricmc.net/docs/yarn-1.21.4+build.8/net/minecraft/server/integrated/IntegratedServer.html) and [Fabric 1.21.4 test-world save API](https://github.com/FabricMC/fabric-api/blob/1.21.4/fabric-client-gametest-api-v1/src/client/java/net/fabricmc/fabric/api/client/gametest/v1/world/TestWorldSave.java).

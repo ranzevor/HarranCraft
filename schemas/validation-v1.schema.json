@@ -19,10 +19,29 @@
     "source": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/source"}]},
     "source_after": {"$ref": "#/$defs/source"},
     "tools": {"type": "object"},
+    "lan_execution": {"type": "boolean"},
+    "client_scenarios": {
+      "type": "object",
+      "required": ["status", "passed", "missing", "unexpected", "duplicates", "lan"],
+      "properties": {
+        "status": {"enum": ["passed", "failed"]},
+        "passed": {"$ref": "#/$defs/scenarioNames"},
+        "missing": {"$ref": "#/$defs/scenarioNames"},
+        "unexpected": {"$ref": "#/$defs/scenarioNames"},
+        "duplicates": {"$ref": "#/$defs/scenarioNames"},
+        "lan": {"enum": ["requested", "not_requested"]}
+      },
+      "additionalProperties": false
+    },
     "preflight": {"enum": ["not_run", "running", "passed", "blocked", "failed", "timed_out", "interrupted"]},
     "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}}
   },
   "$defs": {
+    "scenarioNames": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z-]+$"}
+    },
     "source": {
       "type": "object",
       "required": ["revision", "tree", "snapshot_sha256", "file_count", "dirty"],

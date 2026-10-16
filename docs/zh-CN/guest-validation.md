@@ -37,7 +37,7 @@ python tools/gradle.py build
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true runGameTest
 ```
 
-服务端 GameTest 检查规范方块状态，并验证隔离 GameTest 服务器不能作为生产桥接端点。客户端测试使用新建嵌入式世界及 `test_bridge.py` 生成的原生测试进程。Linux 默认单配置输出对应：
+显式启用游戏测试时，`build` 和 `check` 生命周期可运行服务端 GameTest；单独执行 `test` 不运行 GameTest。客户端 GameTest 仅在请求 `runClientGameTest` 时运行。服务端 GameTest 检查规范方块状态，并验证隔离 GameTest 服务器不能作为生产桥接端点。客户端测试使用新建嵌入式世界及 `test_bridge.py` 生成的原生测试进程。Linux 默认单配置输出对应：
 
 ```console
 python tools/gradle.py -PrunMinecraftTests=true -PacceptMinecraftEula=true -PpeerExecutable=../build/bridge/native/hc-bridge-peer runClientGameTest
@@ -78,6 +78,24 @@ Gradle 启动器准备、Gradle 执行及证据收集分别记为阶段。报告
 
 支持的 Gradle 选项为 `--offline`、`--refresh-dependencies`、`--rerun-tasks`、`--stacktrace`、`--full-stacktrace`、`--info`、`--build-cache`、`--no-build-cache`、`--parallel`、`--no-parallel`、`--continue`、`--no-daemon`、`--console=plain` 和 `--max-workers=N`（1–9999）。其他选项在预检前拒绝，包括仅输出帮助／版本的命令、守护进程控制、构建扫描、其他属性写法及选项缩写。入口固定非守护进程执行及普通控制台输出。
 
-项目属性采用 `-Pname=value`，仅接受 `runMinecraftTests`、`acceptMinecraftEula`、`peerExecutable`；拒绝重复属性及非布尔游戏开关。两个游戏开关必须显式为 true 才允许游戏执行，否则本次调用明确传入两个 false，覆盖环境变量或用户级 Gradle 属性中的隐含值。客户端测试继续执行既有对端文件和图形条件检查。
+项目属性采用 `-Pname=value`，仅接受 `runMinecraftTests`、`acceptMinecraftEula`、`peerExecutable`、`runLanTests`；拒绝重复属性及非布尔游戏开关。两个游戏开关必须显式为 true 才允许游戏执行，否则本次调用明确传入两个 false，覆盖环境变量或用户级 Gradle 属性中的隐含值。客户端测试继续执行既有对端文件和图形条件检查。
 
 工具探测在 `tools` 中保留标准输出／错误引用、退出码、耗时、清理结果及原始失败详情。探测失败、条件缺失、超时和中断分别保留对应状态；进程成功但版本无法识别时，探测检查仍判失败。源码身份获取超时保持 `timed_out`；最终报告不会将已中断或失败的预检保留为 `running`。
+
+## 世界生命周期与隔离 LAN 验收
+
+客户端执行还会在一次性世界中运行 `WorldLifecycleTests`：通过三个新连接反复进行原生方块往返；验证测试线程无法取得服务端接入权限，且拒绝时不接管传入流；验证拒绝替换箱子时，原方块实体身份及七颗钻石的物品样本保持不变。关闭世界时保留原生观察连接，由已注册的生命周期回调回收，不由测试提前断开。重新打开本次生成的存档，先检查金块保存结果再继续修改；重开和替换世界都必须拒绝旧代次并完成新连接的方块往返。不打开已有存档。
+
+原生 `observe` 场景订阅一个已加载位置，接收独立来源的变化，并等待客体关闭流。`ObservationTests` 以真实进程验证该对端，包括错误代次／顺序／来源／类型、截断帧拒绝和连续回收；人为提供的客体帧不是 Minecraft 执行。
+
+LAN 验收需要额外显式启用及隔离网络：测试调用真实 `openToLan`，临时开放监听端口并启动 Minecraft LAN 发现广播。不接入另一名玩家，也不修改真实安装。从仓库根部执行，Windows Visual Studio 默认对端路径为：
+
+```console
+python tools/gradle.py --hc-timeout 1800 -PrunMinecraftTests=true -PacceptMinecraftEula=true -PrunLanTests=true -PpeerExecutable=../build/bridge/native/Debug/hc-bridge-peer.exe runClientGameTest
+```
+
+Linux 改用 `../build/bridge/native/hc-bridge-peer`。`runLanTests` 仅在已启用客户端测试时接受；入口每次默认明确传入 false，覆盖环境中的项目属性，普通客户端测试不开放 LAN。LAN 场景验证真实模式拒绝、自动 tick 回收原生观察连接、拒绝接入新的调用方自有传输及原方块不变。另用受控命令队列配合真实 Minecraft 适配器及实际 LAN 状态，验证已排队 SET 被丢弃；这不是原生管道队列实测。关闭生成世界后须确认服务端与发现线程结束、监听端口可重新绑定；随后新建私有世界，拒绝旧代次并完成新连接往返。
+
+每个已完成客户端场景在本次 Gradle 输出中记录 `HARRANCRAFT_SCENARIO <name>`。报告的 `client_scenarios` 分别记录已通过、缺失、意外及重复名称；仅任务退出成功和截图存在不足以通过。默认要求 `block-roundtrip`、`reconnect`、`block-entity-preservation`、`thread-ownership`、`world-stop`、`world-reopen`、`world-replacement`，显式 LAN 执行另要求 `lan-revocation` 与 `lan-recovery`。缺失或重复完成记录使验收失败；`lan_execution=false` 和 `lan=not_requested` 不能代表 LAN 已验收。截图视觉审查仍单独执行。
+
+上述游戏测试源码需要配置的 Fabric 构建及真实客户端／服务端执行。接口依据：[Yarn 1.21.4+build.8 嵌入式服务端](https://maven.fabricmc.net/docs/yarn-1.21.4+build.8/net/minecraft/server/integrated/IntegratedServer.html)及 [Fabric 1.21.4 测试存档接口](https://github.com/FabricMC/fabric-api/blob/1.21.4/fabric-client-gametest-api-v1/src/client/java/net/fabricmc/fabric/api/client/gametest/v1/world/TestWorldSave.java)。

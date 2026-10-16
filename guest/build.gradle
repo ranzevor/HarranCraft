@@ -37,10 +37,16 @@ tasks.withType(AbstractArchiveTask).configureEach {
 
 def runMinecraftTests = providers.gradleProperty('runMinecraftTests')
         .map { it == 'true' }.getOrElse(false)
+def runLanTests = providers.gradleProperty('runLanTests')
+        .map { it == 'true' }.getOrElse(false)
 def acceptMinecraftEula = providers.gradleProperty('acceptMinecraftEula')
         .map { it == 'true' }.getOrElse(false)
 if (runMinecraftTests && !acceptMinecraftEula) {
     throw new GradleException('Game tests require explicit Minecraft EULA acceptance')
+}
+
+if (runLanTests && !runMinecraftTests) {
+    throw new GradleException('LAN tests require explicit Minecraft game-test execution')
 }
 
 fabricApi {
@@ -67,6 +73,9 @@ check.dependsOn coreTest, lifecycleTest, tasks.named('gametestClasses')
 
 def peerFile = providers.gradleProperty('peerExecutable')
 loom.runs.configureEach {
+    if (name == 'clientGameTest') {
+        property 'harrancraft.test.lan', runLanTests.toString()
+    }
     if (name.toLowerCase().contains('test') && peerFile.isPresent()) {
         property 'harrancraft.test.peer', file(peerFile.get()).absolutePath
     }
@@ -78,7 +87,7 @@ tasks.register('verifyGuestJar') {
         new java.util.zip.ZipFile(remapJar.archiveFile.get().asFile).withCloseable { archive ->
             def names = archive.entries().collect { it.name }
             if (names.any { entry -> entry.startsWith('net/minecraft/') || entry.contains('/test/') ||
-                    ['CoreTests', 'LifecycleTests', 'ProcessTests', 'PipeTests'].any { testClass ->
+                    ['CoreTests', 'LifecycleTests', 'ProcessTests', 'PipeTests', 'ObservationTests'].any { testClass ->
                         entry.startsWith('io/ranzevor/harrancraft/bridge/' + testClass)
                     } }) {
                 throw new GradleException('Production mod contains game or test classes')

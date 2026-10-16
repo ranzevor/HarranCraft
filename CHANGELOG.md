@@ -4,6 +4,8 @@
 
 ### Added
 
+- Client GameTest sources for reconnect, world shutdown/reopen/replacement, thread ownership and chest-data preservation; isolated LAN revocation/recovery requires a separate explicit opt-in.
+- Native observation-peer regressions and per-scenario client completion evidence in local validation reports.
 - Local validation preflight, source fingerprints, invocation deadlines, owned-process cleanup and versioned per-stage reports in the existing bridge and Gradle entry points. New or changed game-test evidence is collected without reusing unchanged screenshots.
 - Read-only AMD64 PE32+ inspector with streaming SHA-256, section and export metadata, and fixed file versions.
 - Versioned JSON report schema, input-index reporting, bounded malformed-input handling and English/简体中文 CLI resources.
@@ -30,6 +32,8 @@ Java/C++ reference frames, controlled process checks and affected lifecycle/tool
 
 ### 未发布变更
 
+- 新增断连重连、世界关闭／重开／替换、线程归属及箱子数据保留的客户端 GameTest 源码；隔离 LAN 撤销与恢复需要单独显式启用。
+- 新增原生观察进程回归，并在本地验收报告中核对客户端逐场景完成记录。
 - 验收报告保留探测超时、中断及诊断结果；即使退出码为零，也须确认请求的 Gradle 任务完成；拒绝歧义调用选项，并按本次调用固定游戏测试开关。
 - 在现有桥接与 Gradle 入口新增本地预检、源码指纹、整次时限、自有进程清理及带版本号的分阶段报告；收集新增或变化的游戏测试证据，不复用未变化的旧截图。
 - 私有管道关闭支持显式的自有对端取消，保留 I/O 与清理异常，并分别查询连接失效和工作线程结束。关闭后才完成的读取不再进入队列；原生故障测试覆盖饱和、断管、截断、并发关闭及反复资源回收。

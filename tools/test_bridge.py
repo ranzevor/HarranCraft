@@ -27,6 +27,7 @@ STAGES = [
     "frame-comparison",
     "process-tests",
     "pipe-tests",
+    "observation-tests",
 ]
 
 
@@ -91,6 +92,10 @@ def validate(check: Validation, arguments: list[str]) -> None:
             f"{PACKAGE}.PipeTests",
             str(bin_dir / f"hc-pipe-peer{extension}"),
         ],
+    )
+
+    check.run(
+        "observation-tests", ["java", "-cp", str(java), f"{PACKAGE}.ObservationTests", str(peer)]
     )
 
 

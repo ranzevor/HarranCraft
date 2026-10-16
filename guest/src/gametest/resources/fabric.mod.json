@@ -6,7 +6,12 @@
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
-    "fabric-gametest": ["io.ranzevor.harrancraft.test.ServerTests"],
-    "fabric-client-gametest": ["io.ranzevor.harrancraft.test.ClientTests"]
+    "fabric-gametest": [
+      "io.ranzevor.harrancraft.test.ServerTests"
+    ],
+    "fabric-client-gametest": [
+      "io.ranzevor.harrancraft.test.ClientTests",
+      "io.ranzevor.harrancraft.test.WorldLifecycleTests"
+    ]
   }
 }
