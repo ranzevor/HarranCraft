@@ -1,5 +1,6 @@
 import hashlib
 import io
+import json
 import os
 import tempfile
 import unittest
@@ -192,3 +193,24 @@ class GradleBootstrapTests(unittest.TestCase):
                 with self.assertRaisesRegex(OSError, "network failure"):
                     gradle.prepare()
                 self.assertFalse((Path(temporary) / "build/toolchains/.install-lock").exists())
+
+
+class FabricManifestTests(unittest.TestCase):
+    def test_game_tests_remain_in_separate_source_manifest(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        production_path = root / "guest/src/main/resources/fabric.mod.json"
+        test_path = root / "guest/src/gametest/resources/fabric.mod.json"
+        production = json.loads(production_path.read_text(encoding="utf-8"))
+        test_mod = json.loads(test_path.read_text(encoding="utf-8"))
+
+        test_keys = {"fabric-gametest", "fabric-client-gametest"}
+        self.assertEqual(production["id"], "harrancraft")
+        self.assertEqual(test_mod["id"], "harrancraft-gametest")
+        self.assertTrue(test_keys.isdisjoint(production["entrypoints"]))
+        self.assertEqual(set(test_mod["entrypoints"]), test_keys)
+        for class_names in test_mod["entrypoints"].values():
+            for qualified_name in class_names:
+                source = (
+                    root / "guest/src/gametest/java" / (qualified_name.replace(".", "/") + ".java")
+                )
+                self.assertTrue(source.is_file(), qualified_name)

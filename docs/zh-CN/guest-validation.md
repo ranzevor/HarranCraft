@@ -27,7 +27,7 @@ python tools/test_bridge.py
 python tools/gradle.py build
 ```
 
-默认构建编译主程序、单元测试及 GameTest 源码，并检查生产 JAR 内容，但不启用 Minecraft 执行。运行产物位于 `guest/build/libs`；Python wheel 仍仅包含核查工具。生产 JAR 检查拒绝游戏类及测试入口／测试类。
+默认构建编译主程序、单元测试及 GameTest 源码，并检查生产 JAR 内容，但不启用 Minecraft 执行。运行产物位于 `guest/build/libs`；Python wheel 仍仅包含核查工具。生产 JAR 检查拒绝游戏类、服务端／客户端 GameTest 入口及测试类；仓库回归核对生产与测试源码描述文件的隔离。
 
 ## 明确启用 Minecraft 执行
 

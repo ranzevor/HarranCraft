@@ -48,6 +48,11 @@ if (runMinecraftTests && !acceptMinecraftEula) {
 if (runLanTests && !runMinecraftTests) {
     throw new GradleException('LAN tests require explicit Minecraft game-test execution')
 }
+if (runLanTests && !gradle.startParameter.taskNames.any {
+        it in ['runClientGameTest', ':runClientGameTest']
+}) {
+    throw new GradleException('LAN tests require explicit client GameTest task selection')
+}
 
 fabricApi {
     configureTests {
@@ -98,7 +103,10 @@ tasks.register('verifyGuestJar') {
                 if (!names.contains(required)) throw new GradleException('Missing mod entry: ' + required)
             }
             def manifest = new groovy.json.JsonSlurper().parse(archive.getInputStream(archive.getEntry('fabric.mod.json')))
-            if (manifest.id != 'harrancraft' || manifest.entrypoints.containsKey('fabric-gametest')) {
+            if (manifest.id != 'harrancraft' || !(manifest.entrypoints instanceof Map) ||
+                    ['fabric-gametest', 'fabric-client-gametest'].any { test ->
+                        manifest.entrypoints.containsKey(test)
+                    }) {
                 throw new GradleException('Production mod has incorrect entrypoints')
             }
         }

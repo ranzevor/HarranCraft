@@ -27,7 +27,7 @@ The bridge command builds C++ tests, compiles the dependency-free Java protocol 
 python tools/gradle.py build
 ```
 
-The default build compiles main, unit-test and GameTest sources and checks the production JAR inventory, but does not enable Minecraft execution. Runtime output is under `guest/build/libs`; the Python wheel remains an inspector-only artifact. Production JAR checks reject game classes and test entrypoints/classes.
+The default build compiles main, unit-test and GameTest sources and checks the production JAR inventory, but does not enable Minecraft execution. Runtime output is under `guest/build/libs`; the Python wheel remains an inspector-only artifact. Production JAR checks reject game classes, server/client GameTest entrypoints and test classes. A repository regression checks the separate production/test source descriptors.
 
 ## Explicit Minecraft execution
 
