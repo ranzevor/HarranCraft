@@ -42,6 +42,10 @@ extern "C" {
 HC_HOST_PROBE_API uint32_t hc_probe_current_executable_v1(
     HC_HostImageV1* output, uint32_t output_bytes);
 
+HC_HOST_PROBE_API uint32_t hc_probe_loaded_module_v1(
+    const wchar_t* module_basename, uint32_t name_chars,
+    HC_HostImageV1* output, uint32_t output_bytes);
+
 #ifdef __cplusplus
 }
 #endif

@@ -20,6 +20,8 @@ static_assert(sizeof(HC_HostImageV1) == 56);
 static_assert(offsetof(HC_HostImageV1, sha256) == 24);
 
 using Probe = std::uint32_t(__cdecl*)(HC_HostImageV1*, std::uint32_t);
+using ModuleProbe = std::uint32_t(__cdecl*)(
+    const wchar_t*, std::uint32_t, HC_HostImageV1*, std::uint32_t);
 
 static void require(bool condition, const char* message) {
     if (!condition) throw std::runtime_error(message);
@@ -56,8 +58,9 @@ static HC_HostImageV1 capture(Probe probe) {
 
 int main(int argc, char** argv) {
     try {
-        require(argc == 1 || (argc == 2 && std::string_view(argv[1]) == "--sha256"),
-                "Unknown host probe test argument");
+        const bool exe_digest = argc == 2 && std::string_view(argv[1]) == "--sha256";
+        const bool module_digest = argc == 2 && std::string_view(argv[1]) == "--module-sha256";
+        require(argc == 1 || exe_digest || module_digest, "Unknown host probe test argument");
         const auto self = executable_path();
         const auto slash = self.find_last_of(L"\\/");
         require(slash != std::wstring::npos, "Executable directory unavailable");
@@ -67,6 +70,10 @@ int main(int argc, char** argv) {
         require(address != nullptr, "Versioned host probe export missing");
         static_assert(sizeof(Probe) == sizeof(FARPROC));
         const auto probe = std::bit_cast<Probe>(address);
+        auto* module_address = GetProcAddress(module.value, "hc_probe_loaded_module_v1");
+        require(module_address != nullptr, "Versioned loaded-module export missing");
+        static_assert(sizeof(ModuleProbe) == sizeof(FARPROC));
+        const auto probe_module = std::bit_cast<ModuleProbe>(module_address);
 
         HC_HostImageV1 unchanged{};
         unchanged.version = 99;
@@ -80,6 +87,41 @@ int main(int argc, char** argv) {
         const auto second = capture(probe);
         require(std::memcmp(&first, &second, sizeof(first)) == 0,
                 "Repeated host image probes disagree");
+
+        constexpr wchar_t library_name[] = L"hc-host-probe.dll";
+        constexpr auto library_chars = static_cast<std::uint32_t>(
+            sizeof(library_name) / sizeof(library_name[0]) - 1);
+        HC_HostImageV1 library{};
+        require(probe_module(library_name, library_chars, &library, sizeof(library))
+                    == HC_HOST_PROBE_OK, "Loaded module probe failed");
+        require(library.version == HC_HOST_IMAGE_ABI_V1 && library.machine == 0x8664
+                    && library.file_bytes > 0, "Loaded DLL identity is invalid");
+        const auto library_repeat = [&] {
+            HC_HostImageV1 result{};
+            require(probe_module(library_name, library_chars, &result, sizeof(result))
+                        == HC_HOST_PROBE_OK, "Repeated module probe failed");
+            return result;
+        };
+        require(std::memcmp(&library, &library_repeat(), sizeof(library)) == 0,
+                "Loaded DLL fingerprint changed");
+
+        HC_HostImageV1 invalid_name{};
+        invalid_name.version = 99;
+        constexpr wchar_t path_name[] = L"../hc-host-probe.dll";
+        require(probe_module(path_name, static_cast<std::uint32_t>(
+                    sizeof(path_name) / sizeof(path_name[0]) - 1),
+                    &invalid_name, sizeof(invalid_name)) == HC_HOST_PROBE_INVALID_ARGUMENT,
+                "Module path was accepted");
+        require(probe_module(nullptr, 0, &invalid_name, sizeof(invalid_name))
+                    == HC_HOST_PROBE_INVALID_ARGUMENT, "Null module name was accepted");
+        require(invalid_name.version == 99, "Invalid module name wrote output");
+        constexpr wchar_t absent[] = L"harrancraft-absent-module.dll";
+        HC_HostImageV1 missing{};
+        missing.version = 99;
+        require(probe_module(absent, static_cast<std::uint32_t>(
+                    sizeof(absent) / sizeof(absent[0]) - 1),
+                    &missing, sizeof(missing)) == HC_HOST_PROBE_UNAVAILABLE
+                    && missing.version == 0, "Missing module did not fail closed");
 
         HANDLE file = CreateFileW(self.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr,
                                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -114,12 +156,16 @@ int main(int argc, char** argv) {
         for (int iteration = 0; iteration < 16; ++iteration) {
             const auto next = capture(probe);
             require(std::memcmp(&first, &next, sizeof(first)) == 0, "Probe result changed");
+            const auto next_module = library_repeat();
+            require(std::memcmp(&library, &next_module, sizeof(library)) == 0,
+                    "Loaded module identity changed");
         }
         require(GetProcessHandleCount(GetCurrentProcess(), &after) != 0
                     && after <= before + 1, "Repeated probes retained process handles");
 
-        if (argc == 2) {
-            for (std::uint8_t value : first.sha256) {
+        if (exe_digest || module_digest) {
+            const auto& digest = module_digest ? library : first;
+            for (std::uint8_t value : digest.sha256) {
                 std::cout << std::hex << std::setw(2) << std::setfill('0')
                           << static_cast<unsigned>(value);
             }

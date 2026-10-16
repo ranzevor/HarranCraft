@@ -6,7 +6,7 @@
 
 `hc-inspect` is an offline development tool. Its data flow is explicit file argument → bounded PE parsing and streaming hash → versioned report. Inputs are read-only; reports carry input positions rather than paths. The parser does not participate in the game process or grant permission for a native callback.
 
-The H2-A source adds a Fabric block adapter, chunk-change observation, a Java session/transport core and an independent C++ test peer. Controlled process tests exercise the wire and lifecycle; the Fabric build and real GameTests remain unrun. The embedding API accepts caller-owned private pipes; it does not provide a user launcher. [Block bridge contract](bridge.md)
+The H2-A source adds a Fabric block adapter, chunk-change observation, a Java session/transport core and an independent C++ test peer. Controlled process tests exercise the wire and lifecycle; Ubuntu Fabric and GameTest source compilation plus production JAR verification pass, while real GameTests remain unrun. The embedding API accepts caller-owned private pipes; it does not provide a user launcher. [Block bridge contract](bridge.md)
 
 The Windows-only [self-image probe](host-observation.md#windows-self-image-probe) supplies read-only on-disk main-executable fingerprints through a fixed C ABI. It does not establish the active engine build from mapped memory or prove session mode or callback safety. The independent [H1 observation core](host-observation.md) checks explicit executable fingerprints, positively asserted single-player/read-phase evidence, session generations and exact world/camera/frame/capture correspondence. Its host-to-guest clip-space projection is mathematical only; it neither locates Dying Light callbacks nor reads the game's camera or depth resources. No game build is accepted by default.
 
@@ -14,7 +14,7 @@ The Windows-only [self-image probe](host-observation.md#windows-self-image-probe
 
 The native Dying Light 1 adapter owns host object identities, original-world queries, camera/depth acquisition and accepted engine calls. A real Fabric guest owns Minecraft inventory, blocks, items and Minecraft simulation. A bridge transports versioned snapshots and commands; it is not a second independent authority over either game's health or objects.
 
-The native adapter is expected to use a Windows x64 toolchain; the guest has a pinned candidate toolchain listed in [compatibility](compatibility.md), pending complete dependency resolution and game validation. Garry's Mod is not a component. Native geometry submission and a depth-aware GPU compositor remain competing experiments until host evidence selects a route.
+The native adapter targets a Windows x64 toolchain; the guest's pinned toolchain in [compatibility](compatibility.md) has resolved and compiled in Ubuntu CI, with real game validation pending. Garry's Mod is not a component. Native geometry submission and a depth-aware GPU compositor remain competing experiments until host evidence selects a route.
 
 | State or operation | Authority and acceptance |
 | --- | --- |

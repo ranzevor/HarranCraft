@@ -20,7 +20,16 @@ STAGES = [
     "configure",
     "native-build",
     "native-tests",
-    *(["host-image-probe", "host-image-comparison"] if os.name == "nt" else []),
+    *(
+        [
+            "host-image-probe",
+            "host-image-comparison",
+            "host-module-probe",
+            "host-module-comparison",
+        ]
+        if os.name == "nt"
+        else []
+    ),
     "java-build",
     "core-tests",
     "lifecycle-tests",
@@ -69,6 +78,26 @@ def validate(check: Validation, arguments: list[str]) -> None:
         check.save()
         if comparison["status"] != "passed":
             check.reject("host_image_digest_mismatch", "failed")
+        module_binary = bin_dir / "hc-host-probe.dll"
+        module_result = check.run(
+            "host-module-probe", [str(test_binary), "--module-sha256"]
+        ).strip()
+        if module_binary.stat().st_size > 512 * 1024 * 1024:
+            check.reject("host_module_test_binary_oversize", "failed")
+        with module_binary.open("rb") as stream:
+            module_expected = hashlib.file_digest(stream, "sha256").hexdigest()
+        module_comparison = next(
+            item for item in check.report["stages"] if item["name"] == "host-module-comparison"
+        )
+        module_comparison["status"] = (
+            "passed"
+            if re.fullmatch(r"[0-9a-f]{64}", module_result)
+            and module_result == module_expected
+            else "failed"
+        )
+        check.save()
+        if module_comparison["status"] != "passed":
+            check.reject("host_module_digest_mismatch", "failed")
     bridge = Path("io/ranzevor/harrancraft/bridge")
     sources = [
         str(path)

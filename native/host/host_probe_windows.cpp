@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 static_assert(sizeof(void*) == 8, "The host probe requires Windows x64");
@@ -26,6 +27,13 @@ struct File {
     File& operator=(const File&) = delete;
     ~File() {
         if (handle != INVALID_HANDLE_VALUE) CloseHandle(handle);
+    }
+};
+
+struct ModuleRef {
+    HMODULE value = nullptr;
+    ~ModuleRef() {
+        if (value != nullptr) FreeLibrary(value);
     }
 };
 
@@ -51,10 +59,10 @@ struct Hash {
     }
 };
 
-bool main_executable_path(std::wstring& path) {
+bool module_path(HMODULE module, std::wstring& path) {
     for (DWORD capacity = 512; capacity <= 32768; capacity *= 2) {
         std::vector<wchar_t> buffer(capacity);
-        const DWORD length = GetModuleFileNameW(nullptr, buffer.data(), capacity);
+        const DWORD length = GetModuleFileNameW(module, buffer.data(), capacity);
         if (length == 0) return false;
         if (length < capacity) {
             path.assign(buffer.data(), length);
@@ -75,7 +83,7 @@ bool seek(HANDLE handle, std::int64_t offset) {
     return SetFilePointerEx(handle, target, nullptr, FILE_BEGIN) != 0;
 }
 
-bool is_amd64_executable(HANDLE handle, std::uint64_t size) {
+bool is_amd64_image(HANDLE handle, std::uint64_t size, bool expect_dll) {
     IMAGE_DOS_HEADER dos{};
     if (!seek(handle, 0) || !read_exact(handle, &dos, static_cast<DWORD>(sizeof(dos)))
         || dos.e_magic != IMAGE_DOS_SIGNATURE || dos.e_lfanew < static_cast<LONG>(sizeof(dos))) {
@@ -92,7 +100,7 @@ bool is_amd64_executable(HANDLE handle, std::uint64_t size) {
         && header.FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64
         && header.FileHeader.SizeOfOptionalHeader >= sizeof(IMAGE_OPTIONAL_HEADER64)
         && (header.FileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE) != 0
-        && (header.FileHeader.Characteristics & IMAGE_FILE_DLL) == 0
+        && (((header.FileHeader.Characteristics & IMAGE_FILE_DLL) != 0) == expect_dll)
         && header.OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC;
 }
 
@@ -106,9 +114,26 @@ bool same_file(const BY_HANDLE_FILE_INFORMATION& left,
         && CompareFileTime(&left.ftLastWriteTime, &right.ftLastWriteTime) == 0;
 }
 
-std::uint32_t probe(HC_HostImageV1& identity) {
+bool valid_basename(const wchar_t* name, std::uint32_t length) {
+    if (name == nullptr || length < 5 || length > 64) return false;
+    const std::wstring_view value(name, length);
+    const auto lower = [](wchar_t ch) {
+        return ch >= L'A' && ch <= L'Z' ? static_cast<wchar_t>(ch - L'A' + L'a') : ch;
+    };
+    const auto extension = value.substr(value.size() - 4);
+    if (extension[0] != L'.' || lower(extension[1]) != L'd'
+        || lower(extension[2]) != L'l' || lower(extension[3]) != L'l') {
+        return false;
+    }
+    return std::all_of(value.begin(), value.end(), [](wchar_t ch) {
+        return (ch >= L'a' && ch <= L'z') || (ch >= L'A' && ch <= L'Z')
+            || (ch >= L'0' && ch <= L'9') || ch == L'.' || ch == L'_' || ch == L'-';
+    });
+}
+
+std::uint32_t probe(HC_HostImageV1& identity, HMODULE module, bool expect_dll) {
     std::wstring path;
-    if (!main_executable_path(path)) return HC_HOST_PROBE_UNAVAILABLE;
+    if (!module_path(module, path)) return HC_HOST_PROBE_UNAVAILABLE;
 
     File file;
     // Refuse existing or new writers while measuring the on-disk executable.
@@ -126,7 +151,7 @@ std::uint32_t probe(HC_HostImageV1& identity) {
     if (length.QuadPart <= 0) return HC_HOST_PROBE_UNSUPPORTED_IMAGE;
     const auto file_bytes = static_cast<std::uint64_t>(length.QuadPart);
     if (file_bytes > max_image_bytes) return HC_HOST_PROBE_IMAGE_TOO_LARGE;
-    if (!is_amd64_executable(file.handle, file_bytes) || !seek(file.handle, 0)) {
+    if (!is_amd64_image(file.handle, file_bytes, expect_dll) || !seek(file.handle, 0)) {
         return HC_HOST_PROBE_UNSUPPORTED_IMAGE;
     }
     Hash digest;
@@ -170,7 +195,32 @@ extern "C" HC_HOST_PROBE_API uint32_t hc_probe_current_executable_v1(
     *output = {};
     try {
         HC_HostImageV1 result{};
-        const auto status = probe(result);
+        const auto status = probe(result, nullptr, false);
+        if (status == HC_HOST_PROBE_OK) *output = result;
+        return status;
+    } catch (...) {
+        *output = {};
+        return HC_HOST_PROBE_SYSTEM_FAILURE;
+    }
+}
+
+extern "C" HC_HOST_PROBE_API uint32_t hc_probe_loaded_module_v1(
+    const wchar_t* module_basename, uint32_t name_chars,
+    HC_HostImageV1* output, uint32_t output_bytes) {
+    if (output == nullptr || output_bytes != sizeof(HC_HostImageV1)
+        || !valid_basename(module_basename, name_chars)) {
+        return HC_HOST_PROBE_INVALID_ARGUMENT;
+    }
+    *output = {};
+    try {
+        const std::wstring name(module_basename, name_chars);
+        ModuleRef module;
+        // This borrows an existing process module only; no library is loaded.
+        if (!GetModuleHandleExW(0, name.c_str(), &module.value)) {
+            return HC_HOST_PROBE_UNAVAILABLE;
+        }
+        HC_HostImageV1 result{};
+        const auto status = probe(result, module.value, true);
         if (status == HC_HOST_PROBE_OK) *output = result;
         return status;
     } catch (...) {
