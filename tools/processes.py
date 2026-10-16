@@ -345,8 +345,19 @@ def execute(
                     deadline = time.monotonic() + 1
                     while job.active() and time.monotonic() < deadline:
                         time.sleep(POLL_SECONDS)
+                    if job.active() and outcome["status"] == "running":
+                        try:
+                            names = job.active_process_names()
+                        except OSError:
+                            names = []
+                        if names and all(name.casefold() == "vctip.exe" for name in names):
+                            # The MSVC telemetry helper must exit naturally; it is not exempt.
+                            grace = min(start + timeout, time.monotonic() + 30)
+                            while job.active() and time.monotonic() < grace:
+                                time.sleep(POLL_SECONDS)
                     if job.active():
                         outcome["descendants_terminated"] = True
+                        outcome.setdefault("reason", "owned_descendant_retained")
                         try:
                             outcome["remaining_processes"] = job.active_process_names()
                         except OSError:

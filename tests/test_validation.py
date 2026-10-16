@@ -463,9 +463,7 @@ class AdditionalProcessTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "Windows Job Object ownership")
     def test_windows_job_reports_active_process_names(self) -> None:
         job = processes.WindowsJob()
-        process = subprocess.Popen(
-            [sys.executable, "-S", "-c", "import time; time.sleep(10)"]
-        )
+        process = subprocess.Popen([sys.executable, "-S", "-c", "import time; time.sleep(10)"])
         try:
             job.attach(process.pid)
             names = job.active_process_names()
