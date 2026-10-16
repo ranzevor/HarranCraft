@@ -4,6 +4,7 @@
 
 ### Added
 
+- Bounded native geometry stream receiver with incremental framing, strict session/revision refusal, EOF cleanup and real Java/C++ pipe integration regressions.
 - Session-bound, caller-owned asynchronous guest collision geometry pipe with bounded output, initial GET and subscribed-change publication, cancellation and resource-retirement tests.
 - Separate version 1 Java/C++ collision geometry records with bounded double-precision AABBs, strict decode, golden-byte comparison and native process tests; preserve the 512-byte block protocol.
 - Real Minecraft collision VoxelShape sampling for subscribed blocks, bounded immutable AABBs, session/epoch checks and GameTest source coverage.
@@ -38,6 +39,7 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增有界原生几何流接收器、增量分帧、会话／修订号拒绝、EOF 清理及真实 Java／C++ 管道回归。
 - 新增与会话绑定的客体异步几何输出、GET／订阅变化发布、容量门禁、取消回收及独立故障测试。
 - 新增独立版本 1 Java／C++ 碰撞几何记录、有界双精度包围盒、严格解码、跨语言参考帧及原生进程测试；保留现有 512 字节方块协议。
 - 新增 Minecraft 真实 VoxelShape 碰撞几何采样、有界不可变包围盒、会话／代次校验及 GameTest 源码。

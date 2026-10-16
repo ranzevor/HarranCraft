@@ -43,10 +43,16 @@ The guest publisher assigns contiguous positive revisions. The native candidate 
 
 Boxes are block-local and use Minecraft coordinate units. Translating them into host coordinates requires a separately validated world transform and original-world collision registration. No visual occlusion or actual Dying Light physical blocking is established by the geometry codec.
 
+## Bounded native stream reception
+
+[GeometryReceiver](../include/harrancraft/geometry_receiver.hpp) is a reusable C++20 consumer of geometry-channel bytes. A caller-owned I/O worker passes arbitrary input fragments to `feed`; it buffers no more than one 6,464-byte record, checks the declared length before reading the body, decodes a complete record and applies it to the existing `CandidateLedger`. Access, inspection and session transitions require one owner thread; the receiver never invokes a Dying Light engine function.
+
+An explicit `begin(epoch, coordinate_map)` fixes the expected generation and dimension. Invalid framing or floating-point values, foreign/duplicate/gapped revisions, unrecognized dimensions and candidate overflow invalidate the entire receiving session, discard buffered data and clear staged positions. Clean EOF also clears all candidates; EOF with an unfinished header or body reports truncation. Recovery requires another explicit `begin` with a strictly newer epoch. The receiver preserves the terminal status and accepted-record count for its caller.
+
+[The native receiver test process](../native/tests/geometry_receiver_peer.cpp) uses the receiver on an actual anonymous-pipe input; it is not an injected Dying Light module. No native engine collision registration, physics lifetime callbacks, collision acknowledgement or host-side production attachment is provided.
+
 ## Verification
 
-The pure Java `GeometryPipeTests` suite verifies real asynchronous byte output, explicit cancellation, writer termination, bounded saturation, wrong epochs, revision gaps, thread ownership and output failure propagation. Its tests do not execute Minecraft. The Fabric source is compiled against the pinned Minecraft API, including GET-driven and block-change publication, but live GameTests remain separate.
-
-
+The pure Java `GeometryPipeTests` suite verifies real asynchronous byte output, explicit cancellation, writer termination, bounded saturation, wrong epochs, revision gaps, thread ownership and output failure propagation. The separate native `geometry-receiver` CTest covers fragmented/coalesced frames, exact revisions, unexpected EOF, malformed headers and safe candidate retirement. A Java process regression sends complete, malformed and truncated records to the native receiver over real pipes; its successful case also uses the actual asynchronous `GeometryPipe` writer. Its tests do not execute Minecraft. The Fabric source is compiled against the pinned Minecraft API, including GET-driven and block-change publication, but live GameTests remain separate.
 
 `python tools/test_bridge.py` compiles the Java and C++ codecs, runs corrupt-header, size, invalid-double, padding and capacity regressions, compares the complete golden record across languages and pipes four records through a real C++ subprocess. Native CTest checks the independent codec. GameTest sources additionally encode and decode a collision snapshot derived from a real Minecraft block, but game execution is not enabled in CI.

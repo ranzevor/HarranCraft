@@ -43,6 +43,7 @@ STAGES = [
     "frame-comparison",
     "process-tests",
     "geometry-process-tests",
+    "geometry-receiver-process-tests",
     "pipe-tests",
     "observation-tests",
 ]
@@ -166,6 +167,16 @@ def validate(check: Validation, arguments: list[str]) -> None:
             str(java),
             f"{PACKAGE}.GeometryProcessTests",
             str(bin_dir / f"hc-geometry-peer{extension}"),
+        ],
+    )
+    check.run(
+        "geometry-receiver-process-tests",
+        [
+            "java",
+            "-cp",
+            str(java),
+            f"{PACKAGE}.GeometryReceiverProcessTests",
+            str(bin_dir / f"hc-geometry-receiver-peer{extension}"),
         ],
     )
     check.run(

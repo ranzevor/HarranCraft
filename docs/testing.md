@@ -29,6 +29,8 @@ Pure Java `GeometryPipeTests` covers async real byte writes, bounded enqueue, ge
 
 The independent [geometry codec](geometry.md) is compiled under strict Java 21 and C++20 rules. Tests validate bounded variable-length record parsing, malformed headers/text/padding/floats, air and retirement records, full-capacity data, complete cross-language golden bytes and Java→C++ subprocess exchange. Fabric sources additionally adapt authoritative collision snapshots into geometry records; GameTest execution is separately required.
 
+The native `geometry-receiver` CTest verifies incremental and coalesced stream framing, byte-capacity bounds, invalid/oversized lengths, truncated EOF, replayed or missing revisions, old epochs, owner-thread refusal and staged collision cleanup. The real Java/C++ `GeometryReceiverProcessTests` also sends bytes through native anonymous pipes, including an actual `GeometryPipe` writer and negative malformed/partial-stream cases. Its reader runs only in a controlled process and does not attach to Dying Light.
+
 ## Bridge and guest checks
 
 `python tools/test_bridge.py` compiles C++ with strict warnings and Java with `--release 21 -Xlint:all -Werror`, runs the wire/core/lifecycle suites, compares the complete 512-byte reference frame, and exercises three actual Java/C++ pipe scenarios against a controlled world. It checks command ordering, receipt replay/conflicts, generations, capacities, failed sends and cleanup. It does not instantiate Minecraft.
