@@ -29,9 +29,7 @@ def lan_requested(properties: dict[str, str], *, enabled: bool, client: bool) ->
 
 
 def client_results(output: str, *, lan: bool) -> dict:
-    markers = re.findall(
-        r"(?m)(?:^|[ \t])HARRANCRAFT_SCENARIO(?=[ \t\r]|$)([^\n]*)", output
-    )
+    markers = re.findall(r"(?m)(?:^|[ \t])HARRANCRAFT_SCENARIO(?=[ \t\r]|$)([^\n]*)", output)
     if len(markers) > 64:
         raise ValueError("client_scenario_limit_exceeded")
     records = [marker.strip() for marker in markers if re.fullmatch(r"[a-z-]+", marker.strip())]
