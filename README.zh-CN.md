@@ -20,7 +20,7 @@ HarranCraft 是将真实 Minecraft 运行时与《消逝的光芒 1》融合的�
 | 英文／简体中文命令行及带版本号的 JSON 报告 | 已实现 |
 | 损坏输入、内存上界和安装包 CLI 测试 | 已纳入验证入口 |
 | Java／C++ 桥接协议及私有管道 | 受控世界及真实跨进程测试通过 |
-| Fabric 方块读取、条件修改及变化观察 | 源码已实现；Fabric 构建及游戏测试尚未运行 |
+| Fabric 方块读取、条件修改及变化观察 | 源码已实现；Ubuntu Fabric 构建与生产 JAR 检查通过，游戏内测试未运行 |
 | 消光宿主适配器 | 尚未实现 |
 | 游戏内遮挡、原生方块碰撞、伤害与 TNT | 尚未实现或实机验证 |
 | 可玩发行包或安装器 | 尚未提供 |
@@ -67,7 +67,7 @@ python tools/package.py
 python tools/test_bridge.py
 ```
 
-Fabric 配置版本及明确的本地构建／GameTest 命令见[本地验证](docs/zh-CN/guest-validation.md)。游戏测试默认关闭，不纳入 CI。
+Fabric 配置版本及明确的本地构建／GameTest 命令见[本地验证](docs/zh-CN/guest-validation.md)。CI 编译 Fabric 及 GameTest 源码并检查生产 JAR，不启动 Minecraft；游戏测试默认关闭，不在 CI 中运行。
 
 ## 融合设计
 

@@ -20,7 +20,7 @@ The repository provides **`hc-inspect`**, a read-only development tool for ident
 | English/简体中文 CLI and versioned JSON reports | Implemented |
 | Malformed-input, bounded-memory and packaged-CLI tests | Included in the verification suite |
 | Java/C++ bridge protocol and private-pipe transport | Controlled-world and actual cross-process tests pass |
-| Fabric block reads, conditional writes and change observation | Source implemented; Fabric build and game tests not yet run |
+| Fabric block reads, conditional writes and change observation | Source implemented; Ubuntu Fabric build and production JAR checks passed; in-game tests not run |
 | Dying Light host adapter | Not implemented |
 | In-game occlusion, native block collision, damage and TNT | Not implemented or game-tested |
 | Playable distribution or installer | Not available |
@@ -67,7 +67,7 @@ With JDK 21, CMake 3.25+ and a C++20 compiler already installed, run the game-fr
 python tools/test_bridge.py
 ```
 
-The configured Fabric toolchain and explicit local build/GameTest commands are in [Local validation](docs/guest-validation.md). Game tests are disabled by default and are not part of CI.
+The configured Fabric toolchain and explicit local build/GameTest commands are in [Local validation](docs/guest-validation.md). CI compiles Fabric and GameTest sources and validates the production JAR without running Minecraft. Game tests remain disabled by default and are not executed by CI.
 
 ## Integration design
 

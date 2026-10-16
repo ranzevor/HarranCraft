@@ -26,7 +26,7 @@
 
 ### Validation
 
-Java/C++ reference frames, controlled process checks and affected lifecycle/tooling regressions pass. Fabric dependency resolution, GameTests and target Windows bridge execution remain unrun. No Dying Light host adapter or playable release is included.
+Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and affected lifecycle/tooling regressions pass. Ubuntu/JDK 21 resolves Fabric dependencies and compiles production and GameTest sources, remaps the Mod JAR and verifies its contents in CI #38892925451. Minecraft GameTests, live Mod/Mixin loading, Windows Fabric builds and MSVC-specific native acceptance remain unrun or incomplete. No Dying Light host adapter or playable release is included.
 
 ## 简体中文
 
@@ -45,4 +45,4 @@ Java/C++ reference frames, controlled process checks and affected lifecycle/tool
 - 握手、重复回执或事件发送失败时关闭会话；适配器异常使其失效，输入／输出分别关闭；区块状态读取位于线程、模式和订阅检查之后；默认 Fabric 构建不运行 Minecraft。
 - 中英文桥接契约、验证入口、工具链状态及 H2 验收顺序同步维护。
 
-Java／C++ 参考帧、受控进程及受影响生命周期／工具回归通过；Fabric 依赖解析、GameTest 和目标 Windows 桥接执行尚未运行。当前不包含消光宿主适配器或可玩发行版。
+Java／C++ 参考帧、Linux 与 Windows/MinGW 真实进程测试及受影响生命周期／工具回归通过。Ubuntu/JDK 21 已在 CI #38892925451 完成 Fabric 依赖解析、生产与 GameTest 源码编译、Mod JAR 重映射及内容校验；Minecraft GameTest、实际 Mod/Mixin 装载、Windows Fabric 构建及 MSVC 专项验收仍未完成。当前不包含消光宿主适配器或可玩发行版。

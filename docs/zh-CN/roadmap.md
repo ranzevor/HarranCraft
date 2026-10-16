@@ -16,7 +16,7 @@
 
 ## H2 验收顺序
 
-**H2-A 方块事件与双向 IPC：** 已有源码实现和受控 Java／C++ 进程测试。接续[本地验证](guest-validation.md)：固定依赖解析、Fabric 编译、服务端／客户端 GameTest、Windows 执行、截图和真实模式转换。客体接收嵌入式私有管道，本批不包含最终用户启动器或消光端点。
+**H2-A 方块事件与双向 IPC：** 已有源码实现和受控 Java／C++ 进程测试。固定依赖解析、Fabric 编译及生产 JAR 检查已在 Ubuntu/JDK 21 的 [CI #38892925451](https://github.com/ranzevor/HarranCraft/actions/runs/38892925451) 通过，Linux 和 Windows/MinGW 原生进程检查亦已通过。继续[本地验证](guest-validation.md)：服务端／客户端 GameTest、Windows Fabric 构建、截图及真实世界／模式转换。客体接收嵌入式私有管道，本批不包含最终用户启动器或消光端点。
 
 **H2-B 真实客体图形输出：** 接在真实 H2-A 结果之后，产生带相机、帧及生命周期身份的 Minecraft 渲染／几何输出；后续 H3 继续验证原生世界遮挡及原生碰撞。
 

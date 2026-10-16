@@ -7,8 +7,8 @@
 | Python 核查工具 | Python 3.12+，Windows x64／Linux x86_64 | 自动解析、CLI 与打包验证，矩阵见 CI |
 | 输入程序格式 | AMD64 PE32+，EXE 或 DLL | 解析边界以核查工具契约为准 |
 | 消光宿主 | 第一代，Windows x64，单人 | 尚未实现，没有已验证支持的游戏版本 |
-| Minecraft 客体 | 通过 Fabric 运行真实 Minecraft | 方块适配器与传输源码已实现；Fabric 编译／GameTest 未运行 |
-| 桥接核心及原生测试进程 | JDK 21、C++20、Linux x86_64 | 严格编译、参考帧及受控进程检查通过；本批 Windows 未运行 |
+| Minecraft 客体 | 通过 Fabric 运行真实 Minecraft | Ubuntu Fabric 源码编译、重映射及生产 JAR 检查通过；游戏内 GameTest 未运行 |
+| 桥接核心及原生测试进程 | JDK 21、C++20、Linux x86_64／Windows x64 | Linux/GCC 与 Windows/MinGW 严格编译、参考帧及真实进程测试通过；MSVC 尚未验收 |
 | 其他消光作品 | 第二代／《困兽》 | 不在首阶段目标内 |
 | 联机模式 | 合作／入侵／其他多人 | 不支持；未来宿主必须在代码中拒绝 |
 
@@ -20,4 +20,4 @@ Linux 可以读取游戏二进制元数据而不运行游戏。文件版本或�
 
 ## 客体配置版本
 
-Minecraft **1.21.4**、Yarn **1.21.4+build.8**、Fabric Loader **0.16.14**、Fabric API **0.119.4+1.21.4**、Loom **1.11.8**、Gradle **8.14.3**、JDK **21**。这些是源码配置值，完整依赖解析及真实 Fabric 执行尚未验证。原生测试需要 CMake **3.25+** 和 C++20 编译器。[本地验证](guest-validation.md)
+Minecraft **1.21.4**、Yarn **1.21.4+build.8**、Fabric Loader **0.16.14**、Fabric API **0.119.4+1.21.4**、Loom **1.11.8**、Gradle **8.14.3**、JDK **21**。上述配置已在 Ubuntu/JDK 21 的 [CI #38892925451](https://github.com/ranzevor/HarranCraft/actions/runs/38892925451) 完成依赖解析及编译；Fabric 游戏实际执行、Mod/Mixin 装载仍未验收。原生测试需要 CMake **3.25+** 和 C++20 编译器。[本地验证](guest-validation.md)

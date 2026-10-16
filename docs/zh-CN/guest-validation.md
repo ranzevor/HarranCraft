@@ -2,7 +2,7 @@
 
 [English](../guest-validation.md) · [开发指南](development.md) · [桥接契约](bridge.md)
 
-在隔离源码目录根部执行命令，使用生成的一次性世界，不使用真实安装或已有存档。本批 Fabric 构建及 GameTest 尚未执行；协议测试通过不能替代这两项验收。
+在隔离源码目录根部执行命令，使用生成的一次性世界，不使用真实安装或已有存档。Ubuntu CI 已通过 Fabric 源码编译与生产 JAR 检查；真实 GameTest 和游戏内融合验收仍未执行，编译及协议测试不能替代后两项。
 
 ## 工具链
 
@@ -27,7 +27,7 @@ python tools/test_bridge.py
 python tools/gradle.py build
 ```
 
-默认构建编译主程序、单元测试及 GameTest 源码，并检查生产 JAR 内容，但不启用 Minecraft 执行。运行产物位于 `guest/build/libs`；Python wheel 仍仅包含核查工具。生产 JAR 检查拒绝游戏类、服务端／客户端 GameTest 入口及测试类；仓库回归核对生产与测试源码描述文件的隔离。
+默认构建编译主程序、单元测试及 GameTest 源码，并检查生产 JAR 内容，但不启用 Minecraft 执行。[CI #38892925451](https://github.com/ranzevor/HarranCraft/actions/runs/38892925451) 已在 Ubuntu/JDK 21 上实际完成 `compileJava`、`compileGametestJava`、`remapJar`、`verifyGuestJar` 与 `build`，Minecraft 和 LAN 执行开关均为 false。运行产物位于 `guest/build/libs`；Python wheel 仍仅包含核查工具。生产 JAR 检查拒绝游戏类、服务端／客户端 GameTest 入口及测试类；仓库回归核对生产与测试源码描述文件的隔离。
 
 ## 明确启用 Minecraft 执行
 

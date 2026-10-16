@@ -2,7 +2,7 @@
 
 [简体中文](zh-CN/guest-validation.md) · [Development](development.md) · [Bridge contract](bridge.md)
 
-Run commands from the repository root in an isolated source checkout. Use disposable generated worlds, not a real installation or existing saves. The guest build and GameTests have not yet been executed for this batch; successful protocol tests do not replace them.
+Run commands from the repository root in an isolated source checkout. Use disposable generated worlds, not a real installation or existing saves. The Fabric sources and production JAR passed an Ubuntu CI build; actual GameTests and live game integration remain unrun. Successful compilation and protocol tests do not replace those acceptance results.
 
 ## Toolchain
 
@@ -27,7 +27,7 @@ The bridge command builds C++ tests, compiles the dependency-free Java protocol 
 python tools/gradle.py build
 ```
 
-The default build compiles main, unit-test and GameTest sources and checks the production JAR inventory, but does not enable Minecraft execution. Runtime output is under `guest/build/libs`; the Python wheel remains an inspector-only artifact. Production JAR checks reject game classes, server/client GameTest entrypoints and test classes. A repository regression checks the separate production/test source descriptors.
+The default build compiles main, unit-test and GameTest sources and checks the production JAR inventory, but does not enable Minecraft execution. [CI #38892925451](https://github.com/ranzevor/HarranCraft/actions/runs/38892925451) executed `compileJava`, `compileGametestJava`, `remapJar`, `verifyGuestJar` and `build` successfully on Ubuntu/JDK 21 with game and LAN switches false. Runtime output is under `guest/build/libs`; the Python wheel remains an inspector-only artifact. Production JAR checks reject game classes, server/client GameTest entrypoints and test classes. A repository regression checks the separate production/test source descriptors.
 
 ## Explicit Minecraft execution
 
