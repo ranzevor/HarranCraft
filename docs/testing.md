@@ -12,6 +12,8 @@ Schema validation uses the declared JSON Schema dialect and accepts both success
 
 ## Host observation checks
 
+The `host-build` CTest covers complete EXE/DLL build matching, case-insensitive name normalization, malformed/duplicate/missing module rejection, bounded profiles, owner-thread access, revoked sessions and stale frame epochs. The Windows host-probe process additionally passes its real measured EXE and loaded probe-DLL fingerprints into this gate and verifies changed-DLL rejection. These checks do not establish a supported Dying Light build.
+
 Windows native bridge tests additionally load the read-only host probe DLL in a controlled executable, validate its fixed C ABI and repeated-call resource retirement, and compare the returned executable SHA-256 to Python's streaming `hashlib.file_digest` result. This checks Windows process-level on-disk fingerprinting, not the Dying Light memory image or engine mode.
 
 

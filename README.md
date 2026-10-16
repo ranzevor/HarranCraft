@@ -22,7 +22,7 @@ The repository provides **`hc-inspect`**, a read-only development tool for ident
 | Java/C++ bridge protocol and private-pipe transport | Controlled-world and actual cross-process tests pass |
 | Fabric block reads, conditional writes and change observation | Source implemented; Ubuntu Fabric build and production JAR checks passed; in-game tests not run |
 | Windows host image probe | Read-only Windows x64 EXE/loaded-DLL fingerprints, controlled ABI/process tests; no game loading |
-| H1 host observation core | C++20 session and camera frame contracts; isolated CTest, no game integration |
+| H1 host observation core | C++20 composite EXE/DLL build identity, session and camera contracts; isolated CTest, no game integration |
 | Dying Light host adapter | Not implemented |
 | In-game occlusion, native block collision, damage and TNT | Not implemented or game-tested |
 | Playable distribution or installer | Not available |

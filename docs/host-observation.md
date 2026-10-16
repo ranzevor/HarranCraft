@@ -12,6 +12,14 @@ The future Windows adapter must measure a legitimate executable independently, d
 
 An observation session opens only with an accepted image and `single_player / playing / verified_engine_read` evidence for a nonzero world. Cooperative, invasion, loading, shutdown, window/Present or unknown states are rejected. Any changed context on an attempted capture or snapshot revokes the active session. Even a verified read phase grants no mutation capability. All observer methods require the creating thread; cross-thread access fails rather than sharing engine-owned pointers.
 
+## Composite host build identity
+
+The [host_build.hpp](../include/harrancraft/host_build.hpp) C++20 contract combines an executable fingerprint with an exact set of required DLL basenames and fingerprints. An explicit allowlist holds at most 16 build profiles, each requiring one to eight distinct DLLs. Module names are normalized as case-insensitive ASCII Windows basenames. Malformed paths or names, duplicate modules, missing or changed fingerprints, incomplete observations and unlisted combinations are rejected. No real Dying Light build is allowlisted by this repository.
+
+`BuildSession` binds the complete build identity to the existing `Observer` generation, world and camera lifetime. `begin` requires an exact profile plus independently supplied single-player and verified read-phase evidence; an EXE-only match is insufficient. `refresh` revokes the session and camera snapshot if a module changes, disappears or cannot be measured. Recovery requires a new successful `begin` and a new epoch; old frame identities cannot be replayed. A forbidden mode, shutdown, world change or cross-thread access is also rejected.
+
+The future adapter must assemble these fingerprints from verified probes outside frame callbacks. These measurements concern on-disk files, not in-memory code attestation. Basename collisions and loading changes between measurements require separate real-host evaluation. The gate does not discover a safe engine callback or authorize game mutation.
+
 ## Windows self-image probe
 
 The Windows x64-only [host probe DLL](../native/host/host_probe_windows.cpp) exports the versioned C interface declared in [host_probe.h](../include/harrancraft/host_probe.h). The function `hc_probe_current_executable_v1` measures the current process's main executable file. `hc_probe_loaded_module_v1` looks up an already-loaded DLL by a bounded ASCII basename (1–64 characters, `.dll` required), retains its module reference during inspection and releases it afterward. Neither function selects another process, loads a game or additional DLL, scans installations or reports private paths. An explicitly sized 56-byte result returns version, AMD64 PE machine, byte length and SHA-256; invalid buffers are rejected without writes, while other failures clear the result.

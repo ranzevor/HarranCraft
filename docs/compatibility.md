@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Python inspector | Python 3.12+, Windows x64 and Linux x86_64 | Automated parser, CLI and package verification; matrix in CI |
 | Inspected file format | AMD64 PE32+, EXE or DLL | Bounded metadata subset specified by the inspector contract |
-| Windows host self-image probe | Windows x64, C++20 | Read-only DLL source and controlled Windows process/ABI tests; does not validate Dying Light |
+| Windows host fingerprint and build gate | Windows x64, C++20 | Read-only EXE/loaded-DLL hashing and isolated composite identity/epoch tests; no accepted Dying Light build |
 | Dying Light host | Dying Light **1**, Windows x64, single-player | Not implemented; no validated supported game build |
 | Minecraft guest | Real Minecraft through Fabric | Ubuntu Fabric source compilation, remapping and production JAR checks passed; in-game GameTests unrun |
 | Bridge core and native peer | JDK 21, C++20, Linux x86_64 and Windows x64 | Strict compilation, reference-frame and real process tests pass on Linux/GCC and Windows/MinGW; MSVC remains unverified |

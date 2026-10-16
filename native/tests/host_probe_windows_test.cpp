@@ -1,3 +1,4 @@
+#include <harrancraft/host_build.hpp>
 #include <harrancraft/host_observation.hpp>
 #include <harrancraft/host_probe.h>
 
@@ -149,6 +150,24 @@ int main(int argc, char** argv) {
         require(!observer.begin(changed, synthetic), "Unlisted executable was accepted");
         require(observer.begin(image, synthetic).has_value(), "Matching executable was rejected");
         observer.stop();
+
+        harrancraft::host::ImageIdentity module_image{};
+        std::copy(std::begin(library.sha256), std::end(library.sha256),
+                  module_image.sha256.begin());
+        module_image.file_bytes = library.file_bytes;
+        module_image.machine = library.machine;
+        const harrancraft::host::BuildImage build{
+            image, {{"hc-host-probe.dll", module_image}}};
+        harrancraft::host::BuildSession session({build});
+        const auto first_epoch = session.begin(build, synthetic);
+        require(first_epoch.has_value(), "Executable and loaded DLL pair was rejected");
+        auto wrong_module = build;
+        wrong_module.modules[0].image.sha256[0] ^= 1;
+        require(!session.refresh(wrong_module), "Changed loaded DLL was accepted");
+        const auto next_epoch = session.begin(build, synthetic);
+        require(next_epoch && *next_epoch > *first_epoch,
+                "Revalidated module pair reused retired generation");
+        session.stop();
 
         DWORD before = 0;
         DWORD after = 0;
