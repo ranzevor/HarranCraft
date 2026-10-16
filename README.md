@@ -23,7 +23,7 @@ The repository provides **`hc-inspect`**, a read-only development tool for ident
 | Fabric block reads, conditional writes and change observation | Source implemented; Ubuntu Fabric build and production JAR checks passed; in-game tests not run |
 | Windows host image probe | Read-only Windows x64 EXE/loaded-DLL fingerprints, controlled ABI/process tests; no game loading |
 | Real Minecraft collision-shape snapshots | Authoritative Fabric VoxelShape read API, epoch and subscription gating; GameTest source compiled, native host collision untested |
-| Collision geometry wire | Separate versioned Java/C++ binary codec and native process peer; no game-side producer transport or native physics yet |
+| Collision geometry transport | Java/C++ versioned codec, bounded guest-side asynchronous pipe and native candidate staging; no Dying Light receiver or registered native physics yet |
 | H1 host observation core | C++20 composite EXE/DLL build identity, session and camera contracts; isolated CTest, no game integration |
 | Dying Light host adapter | Not implemented |
 | In-game occlusion, native block collision, damage and TNT | Not implemented or game-tested |

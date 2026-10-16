@@ -6,7 +6,13 @@
 
 Minecraft 仍是方块状态及碰撞几何的权威。在其服务端线程，`GuestConnections.collisionSnapshot(server, epoch, key)` 从真实世界的已加载、已订阅位置获取不可变快照；`MinecraftCollisionShapes.Snapshot.geometryFrame(revision)` 转换为 `GeometryFrame`，保留规范方块状态及真实 `VoxelShape` 包围盒，而不是重建方块字典或渲染网格。
 
-Java 的 `GeometryFrame.encode()` 输出可由 C++20 [几何协议实现](../../include/harrancraft/geometry_wire.hpp) 解码的数据。该协议需要独立几何通道，原有[512 字节方块协议](bridge.md#版本-1-数据帧)不变。原生[测试对端](../../native/tests/geometry_peer.cpp)通过实际 Java→C++ 进程管道验证完整记录及字节往返。目前尚无游戏侧几何管道写入器、启动器、消光物理注册或宿主权威确认。
+Java 的 `GeometryFrame.encode()` 输出可由 C++20 [几何协议实现](../../include/harrancraft/geometry_wire.hpp) 解码的数据。该协议需要独立几何通道，原有[512 字节方块协议](bridge.md#版本-1-数据帧)不变。原生[测试对端](../../native/tests/geometry_peer.cpp)通过实际 Java→C++ 进程管道验证完整记录及字节往返。可选的 [GeometryPipe](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/GeometryPipe.java) 可由独立工作线程通过调用方自有私有管道异步发送记录，不阻塞 Minecraft 服务端线程。当前仍无消光端正式几何接收器、启动器、原生碰撞注册或宿主权威确认。
+
+## 客体几何管道与资源所有权
+
+`GuestConnections.attachGeometry(server, output, cancelIo)` 将调用方提供的私有输出流接入已完成 WELCOME 的合法 Minecraft 方块会话。拒绝接入时输出流仍由调用方持有，成功接入后由返回的 `GeometryPipe` 管理。服务端线程只负责采样并向最多 64 条记录的队列入队；真正写入、取消与关闭均由独立守护线程执行。成功的 GET 订阅会自动排入初始碰撞快照，已订阅位置变化会排入更新；`publishCollision(server, epoch, key)` 用于显式重新采样。
+
+发送端为每个会话分配连续递增的正修订号。队列饱和、写入失败、旧代次或非法修订号使几何通道关闭，随后在 tick 或发送失败时撤销对应方块会话。`detach` 同时撤销两条通道。调用方必须保留返回的 `GeometryPipe` 句柄，直到 `isTerminated()` 为真，并检查 `cleanupFailure()`；连接拒绝发送不代表 I/O 已退出。取消回调只能解除本连接拥有的端点。已经开始的写入可能在失效后完成，因此原生端仍须校验代次和修订号。几何记录与方块 RESULT/EVENT 的到达先后并不固定，两者都不能冒充宿主原生碰撞注册确认。
 
 ## 几何记录版本 1
 
@@ -33,10 +39,14 @@ SNAPSHOT 必须包含非空规范状态，可以包含零个碰撞盒（例如�
 
 ## 生命周期与能力范围
 
-发送端必须在每个会话内严格递增修订号，原生接收端必须拒绝过期会话、重复和乱序记录。断线重连需要完整重新采样，旧位置数据必须撤销。当前编解码器只验证数据结构，尚未接入正式会话几何通道或宿主物理资源生命周期。
+客体发送端在每个会话内分配连续递增的正修订号；原生候选表拒绝旧代次、重复、乱序和缺失的中间修订号，发现跳号即撤销所有候选。断线重连需要完整重新采样；真实宿主必须在几何管道失效时安全销毁自有物理资源。当前验证只管理原生几何候选坐标，尚无引擎级资源销毁或提交确认。
 
 包围盒是 Minecraft 方块局部坐标和单位。转换成消光世界坐标还需要经过实测的空间变换和原生碰撞体注册。本协议不证明场景遮挡，也不证明消光玩家、丧尸、投射物已被方块阻挡。
 
 ## 验证
+
+纯 Java `GeometryPipeTests` 覆盖真实异步输出、独立取消、工作线程退出、队列饱和、错代次、修订号跳跃、线程归属及写入失败，不运行 Minecraft。Fabric 源码在固定 Minecraft 依赖下编译，包括 GET 与方块变化触发的几何发布逻辑，但真实 GameTest 仍须单独执行。
+
+
 
 `python tools/test_bridge.py` 编译 Java/C++ 编解码器，运行非法帧头、长度、浮点、填充、容量回归，比对完整跨语言参考记录，并通过真实 C++ 子进程管道往返四条记录。原生 CTest 独立验证几何格式。GameTest 源码还对真实 Minecraft 方块碰撞快照进行编码解码，但 CI 不启动游戏。

@@ -16,7 +16,7 @@ The [collision sampler](../guest/src/main/java/io/ranzevor/harrancraft/Minecraft
 
 This is an embedding API only; it does not alter version 1 IPC, create Dying Light collision bodies or capture Minecraft render meshes. A future host adapter must account for block-local to world coordinates, physics shape registration and filtering, resource ownership, damage and rollback, and test player/enemy/projectile collision against the original engine.
 
-The [geometry side-channel](geometry.md) uses a separate versioned record format for real Minecraft collision AABBs; it never repurposes the 512-byte block command frame. Its process tests do not establish Dying Light native physics.
+The [geometry side-channel](geometry.md) uses a separate versioned record format for real Minecraft collision AABBs; it never repurposes the 512-byte block command frame. A caller-owned optional output link publishes successful GET snapshots and subscribed block changes asynchronously; only an independent native test peer exists, not a Dying Light geometry endpoint. Geometry and block receipts may arrive out of order, and the host must separately confirm physical registration.
 
 ## Version 1 frame
 

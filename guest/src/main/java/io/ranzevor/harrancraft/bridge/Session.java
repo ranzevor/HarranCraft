@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /** Single-thread-owned command ordering, receipts and subscriptions. */
 public final class Session {
@@ -17,6 +18,7 @@ public final class Session {
     private final Set<Frame.Key> watched = new HashSet<>();
     private final LinkedHashMap<Long, Receipt> receipts = new LinkedHashMap<>();
     private final Thread owner = Thread.currentThread();
+    private final Consumer<Frame.Key> onRead;
     private long lastActivity;
     private long highWater;
     private long eventId;
@@ -26,10 +28,16 @@ public final class Session {
     private record Receipt(Frame request, Frame response) {}
 
     public Session(long epoch, BlockWorld world, Link link, long now) {
+        this(epoch, world, link, now, key -> {});
+    }
+
+    public Session(long epoch, BlockWorld world, Link link, long now,
+                   Consumer<Frame.Key> onRead) {
         if (epoch <= 0) throw new IllegalArgumentException("A positive session epoch is required");
         this.epoch = epoch;
         this.world = Objects.requireNonNull(world);
         this.link = Objects.requireNonNull(link);
+        this.onRead = Objects.requireNonNull(onRead);
         lastActivity = now;
     }
 
@@ -146,7 +154,10 @@ public final class Session {
         BlockWorld.Outcome current = world.read(request.key());
         if (current.status() != Frame.OK) return current;
         watched.add(request.key());
-        if (request.kind() == Frame.GET) return current;
+        if (request.kind() == Frame.GET) {
+            onRead.accept(request.key());
+            return current;
+        }
         activeCause = request.id();
         try {
             return world.compareAndSet(request.key(), request.expected(), request.state());

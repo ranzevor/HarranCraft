@@ -23,6 +23,10 @@ The Fabric `MinecraftCollisionShapes` source collects Minecraft's actual block c
 
 ## Geometry wire checks
 
+Pure Java `GeometryPipeTests` covers async real byte writes, bounded enqueue, generation/revision enforcement, stream failure, cancellation and complete worker retirement. The guest session compiles optional geometry attachment and GET/block-change publication against Fabric, but source compilation does not establish loaded Mod or real-world behavior.
+
+
+
 The independent [geometry codec](geometry.md) is compiled under strict Java 21 and C++20 rules. Tests validate bounded variable-length record parsing, malformed headers/text/padding/floats, air and retirement records, full-capacity data, complete cross-language golden bytes and Java→C++ subprocess exchange. Fabric sources additionally adapt authoritative collision snapshots into geometry records; GameTest execution is separately required.
 
 ## Bridge and guest checks

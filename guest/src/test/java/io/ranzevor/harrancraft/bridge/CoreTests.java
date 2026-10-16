@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class CoreTests {
@@ -148,6 +149,37 @@ public final class CoreTests {
             int expected = x == Session.MAX_WATCHED ? Frame.CAPACITY : Frame.OK;
             check(limited.send(query).status() == expected, "Subscription bound");
         }
+        MemoryLink geometryLink = new MemoryLink();
+        World geometryWorld = new World();
+        AtomicInteger geometryReads = new AtomicInteger();
+        Session withHook = new Session(9, geometryWorld, geometryLink, 0,
+                key -> geometryReads.incrementAndGet());
+        geometryLink.incoming.add(Frame.control(Frame.HELLO, 0, 0, Frame.NATIVE));
+        withHook.tick(1, true);
+        check(geometryLink.outgoing.remove().kind() == Frame.WELCOME,
+                "Geometry source handshake failed");
+        geometryLink.incoming.add(new Frame(Frame.GET, 9, 1, Frame.NATIVE,
+                Frame.OK, KEY, "", "", 0));
+        withHook.tick(2, true);
+        check(geometryReads.get() == 1 && geometryLink.outgoing.remove().status() == Frame.OK,
+                "Successful GET did not publish subscribed geometry");
+        withHook.close();
+
+        MemoryLink failureLink = new MemoryLink();
+        World failureWorld = new World();
+        Session refusedHook = new Session(10, failureWorld, failureLink, 0,
+                key -> { throw new IllegalStateException("Geometry publication failed"); });
+        failureLink.incoming.add(Frame.control(Frame.HELLO, 0, 0, Frame.NATIVE));
+        refusedHook.tick(1, true);
+        failureLink.outgoing.clear();
+        failureLink.incoming.add(new Frame(Frame.GET, 10, 1, Frame.NATIVE,
+                Frame.OK, KEY, "", "", 0));
+        boolean callbackRejected = false;
+        try { refusedHook.tick(2, true); }
+        catch (IllegalStateException expected) { callbackRejected = true; }
+        check(callbackRejected && !refusedHook.isOpen(),
+                "Geometry publication failure did not invalidate block session");
+
         System.out.println("bridge-core: passed " + checks + " assertions");
     }
 }

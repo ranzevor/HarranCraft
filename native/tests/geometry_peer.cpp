@@ -1,3 +1,4 @@
+#include <harrancraft/geometry_stage.hpp>
 #include <harrancraft/geometry_wire.hpp>
 
 #include <algorithm>
@@ -25,6 +26,7 @@ int main(int argc, char** argv) {
         require(argc == 2 && std::string_view(argv[1]) == "--echo",
                 "Unknown geometry scenario");
         std::size_t received = 0;
+        CandidateLedger staged;
         for (;;) {
             std::array<std::uint8_t, header_bytes> header{};
             std::cin.read(reinterpret_cast<char*>(header.data()),
@@ -44,6 +46,14 @@ int main(int argc, char** argv) {
                         "Truncated geometry box data");
             }
             const auto frame = decode(bytes);
+            if (received == 0) {
+                CoordinateMap mapping;
+                mapping.dimension = frame.key.dimension;
+                staged.begin(frame.epoch, mapping);
+            }
+            const auto result = staged.apply(frame);
+            require(result == StageResult::applied || result == StageResult::retired,
+                    "Stale or invalid staged collision geometry");
             const auto encoded = encode(frame);
             require(encoded == bytes, "Noncanonical geometry representation");
             std::cout.write(reinterpret_cast<const char*>(encoded.data()),
@@ -53,6 +63,8 @@ int main(int argc, char** argv) {
             require(received <= 32, "Too many geometry records");
         }
         require(received != 0, "Empty geometry peer exchange");
+        require(staged.size() == 0, "Retired geometry retained native candidates");
+        staged.stop();
         std::cout.flush();
         require(static_cast<bool>(std::cout), "Geometry stream flush failed");
         std::cerr << "geometry-peer: passed " << received << " frames\n";

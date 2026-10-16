@@ -4,6 +4,7 @@
 
 ### Added
 
+- Session-bound, caller-owned asynchronous guest collision geometry pipe with bounded output, initial GET and subscribed-change publication, cancellation and resource-retirement tests.
 - Separate version 1 Java/C++ collision geometry records with bounded double-precision AABBs, strict decode, golden-byte comparison and native process tests; preserve the 512-byte block protocol.
 - Real Minecraft collision VoxelShape sampling for subscribed blocks, bounded immutable AABBs, session/epoch checks and GameTest source coverage.
 - Bounded C++20 host EXE/DLL composite build allowlisting with camera/session revocation, epoch recovery and native/Windows-process regressions.
@@ -37,6 +38,7 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增与会话绑定的客体异步几何输出、GET／订阅变化发布、容量门禁、取消回收及独立故障测试。
 - 新增独立版本 1 Java／C++ 碰撞几何记录、有界双精度包围盒、严格解码、跨语言参考帧及原生进程测试；保留现有 512 字节方块协议。
 - 新增 Minecraft 真实 VoxelShape 碰撞几何采样、有界不可变包围盒、会话／代次校验及 GameTest 源码。
 - 新增 C++20 宿主 EXE／DLL 组合允许列表、相机／会话撤销、代次恢复及原生／Windows 进程回归。

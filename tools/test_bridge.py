@@ -34,6 +34,7 @@ STAGES = [
     "core-tests",
     "lifecycle-tests",
     "geometry-java-tests",
+    "geometry-pipe-tests",
     "native-frame",
     "geometry-native-frame",
     "geometry-java-frame",
@@ -117,6 +118,7 @@ def validate(check: Validation, arguments: list[str]) -> None:
     check.run("core-tests", ["java", "-cp", str(java), f"{PACKAGE}.CoreTests"])
     check.run("lifecycle-tests", ["java", "-cp", str(java), f"{PACKAGE}.LifecycleTests"])
     check.run("geometry-java-tests", ["java", "-cp", str(java), f"{PACKAGE}.GeometryFrameTests"])
+    check.run("geometry-pipe-tests", ["java", "-cp", str(java), f"{PACKAGE}.GeometryPipeTests"])
     bin_dir = native / "Debug" if (native / "Debug").is_dir() else native
     extension = ".exe" if os.name == "nt" else ""
     peer = bin_dir / f"hc-bridge-peer{extension}"
