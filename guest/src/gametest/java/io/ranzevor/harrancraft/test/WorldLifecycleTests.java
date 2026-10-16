@@ -42,7 +42,7 @@ public final class WorldLifecycleTests implements FabricClientGameTest {
         world.getServer().runCommand("gamemode spectator @a");
         world.getServer().runCommand("tp @a 0.5 79 -4 0 0");
         for (int tick = 0; tick < 200; ++tick) {
-            if (world.getServer().computeOnServer(server -> server.getOverworld().isChunkLoaded(POS))) return;
+            if (world.getServer().computeOnServer(server -> server.getOverworld().getChunkManager().isChunkLoaded(POS.getX() >> 4, POS.getZ() >> 4))) return;
             context.waitTick();
         }
         throw new AssertionError("Test position did not load");
@@ -53,7 +53,7 @@ public final class WorldLifecycleTests implements FabricClientGameTest {
         world.getServer().runCommand("setblock 0 80 0 minecraft:air");
         world.getServer().runOnServer(server -> {
             require(GuestConnections.allowed(server), "Created world is not a private integrated server");
-            require(server.getOverworld().isChunkLoaded(POS), "Test position is not loaded");
+            require(server.getOverworld().getChunkManager().isChunkLoaded(POS.getX() >> 4, POS.getZ() >> 4), "Test position is not loaded");
             require(server.getOverworld().getBlockState(POS).isAir(), "Test position is not air");
         });
     }

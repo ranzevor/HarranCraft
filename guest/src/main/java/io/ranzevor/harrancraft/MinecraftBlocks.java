@@ -36,7 +36,9 @@ public final class MinecraftBlocks implements BlockWorld {
         if (world.isOutOfHeightLimit(pos) || !world.getWorldBorder().contains(pos)) {
             return new Outcome(Frame.INVALID, "");
         }
-        if (!world.isChunkLoaded(pos)) return new Outcome(Frame.UNAVAILABLE, "");
+        if (!world.getChunkManager().isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4)) {
+            return new Outcome(Frame.UNAVAILABLE, "");
+        }
         String state = describe(world.getBlockState(pos));
         return state.length() <= 192 ? new Outcome(Frame.OK, state) : new Outcome(Frame.UNSUPPORTED_STATE, "");
     }

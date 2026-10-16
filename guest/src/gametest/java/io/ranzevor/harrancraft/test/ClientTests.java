@@ -16,11 +16,11 @@ public final class ClientTests implements FabricClientGameTest {
             singleplayer.getServer().runCommand("gamemode spectator @a");
             singleplayer.getServer().runCommand("tp @a 0.5 79 -4 0 0");
             for (int tick = 0; tick < 200; ++tick) {
-                if (singleplayer.getServer().computeOnServer(server -> server.getOverworld().isChunkLoaded(POS))) break;
+                if (singleplayer.getServer().computeOnServer(server -> server.getOverworld().getChunkManager().isChunkLoaded(POS.getX() >> 4, POS.getZ() >> 4))) break;
                 context.waitTick();
             }
             singleplayer.getServer().runOnServer(server -> {
-                if (!server.getOverworld().isChunkLoaded(POS))
+                if (!server.getOverworld().getChunkManager().isChunkLoaded(POS.getX() >> 4, POS.getZ() >> 4))
                     throw new AssertionError("Test position did not load");
             });
             singleplayer.getServer().runCommand("setblock 0 80 0 minecraft:air");
