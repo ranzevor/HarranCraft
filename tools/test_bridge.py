@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import sys
@@ -19,6 +20,7 @@ STAGES = [
     "configure",
     "native-build",
     "native-tests",
+    *(["host-image-probe", "host-image-comparison"] if os.name == "nt" else []),
     "java-build",
     "core-tests",
     "lifecycle-tests",
@@ -50,6 +52,23 @@ def validate(check: Validation, arguments: list[str]) -> None:
     check.run(
         "native-tests", ["ctest", "--test-dir", str(native), "-C", "Debug", "--output-on-failure"]
     )
+    bin_dir = native / "Debug" if (native / "Debug").is_dir() else native
+    if os.name == "nt":
+        test_binary = bin_dir / "hc-host-probe-test.exe"
+        actual = check.run("host-image-probe", [str(test_binary), "--sha256"]).strip()
+        if test_binary.stat().st_size > 512 * 1024 * 1024:
+            check.reject("host_probe_test_binary_oversize", "failed")
+        with test_binary.open("rb") as stream:
+            expected = hashlib.file_digest(stream, "sha256").hexdigest()
+        comparison = next(
+            item for item in check.report["stages"] if item["name"] == "host-image-comparison"
+        )
+        comparison["status"] = (
+            "passed" if re.fullmatch(r"[0-9a-f]{64}", actual) and actual == expected else "failed"
+        )
+        check.save()
+        if comparison["status"] != "passed":
+            check.reject("host_image_digest_mismatch", "failed")
     bridge = Path("io/ranzevor/harrancraft/bridge")
     sources = [
         str(path)

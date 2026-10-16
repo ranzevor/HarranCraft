@@ -9,7 +9,7 @@ recursive-include tests *.py
 recursive-include src *.py *.json py.typed
 recursive-include .github *.yml *.md CODEOWNERS
 recursive-include guest *.java *.json *.gradle *.properties
-recursive-include include *.hpp
+recursive-include include *.hpp *.h
 recursive-include native *.cpp
 prune guest/build
 prune guest/.gradle

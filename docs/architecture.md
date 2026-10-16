@@ -8,7 +8,7 @@
 
 The H2-A source adds a Fabric block adapter, chunk-change observation, a Java session/transport core and an independent C++ test peer. Controlled process tests exercise the wire and lifecycle; the Fabric build and real GameTests remain unrun. The embedding API accepts caller-owned private pipes; it does not provide a user launcher. [Block bridge contract](bridge.md)
 
-The independent [H1 observation core](host-observation.md) now checks explicit executable fingerprints, positively asserted single-player/read-phase evidence, session generations and exact world/camera/frame/capture correspondence. Its host-to-guest clip-space projection is mathematical only; it neither locates Dying Light callbacks nor reads the game's camera or depth resources. No game build is accepted by default.
+The Windows-only [self-image probe](host-observation.md#windows-self-image-probe) supplies read-only on-disk main-executable fingerprints through a fixed C ABI. It does not establish the active engine build from mapped memory or prove session mode or callback safety. The independent [H1 observation core](host-observation.md) checks explicit executable fingerprints, positively asserted single-player/read-phase evidence, session generations and exact world/camera/frame/capture correspondence. Its host-to-guest clip-space projection is mathematical only; it neither locates Dying Light callbacks nor reads the game's camera or depth resources. No game build is accepted by default.
 
 ## Planned runtime boundary
 

@@ -21,6 +21,7 @@ HarranCraft 是将真实 Minecraft 运行时与《消逝的光芒 1》融合的�
 | 损坏输入、内存上界和安装包 CLI 测试 | 已纳入验证入口 |
 | Java／C++ 桥接协议及私有管道 | 受控世界及真实跨进程测试通过 |
 | Fabric 方块读取、条件修改及变化观察 | 源码已实现；Ubuntu Fabric 构建与生产 JAR 检查通过，游戏内测试未运行 |
+| Windows 宿主程序身份探测 | 只读 Windows x64 DLL 及受控 ABI／进程测试，不加载游戏 |
 | H1 宿主观察核心 | C++20 会话、相机帧契约及隔离 CTest；未接入游戏 |
 | 消光宿主适配器 | 尚未实现 |
 | 游戏内遮挡、原生方块碰撞、伤害与 TNT | 尚未实现或实机验证 |
@@ -85,6 +86,8 @@ Fabric 配置版本及明确的本地构建／GameTest 命令见[本地验证](d
 | `src/harrancraft_tools/` | 只读核查工具与语言资源 |
 | `guest/` | Fabric 端点、协议核心及隔离 GameTest 源码 |
 | `include/harrancraft/wire.hpp` | 原生 wire 布局权威 |
+| `include/harrancraft/host_probe.h` | Windows 宿主身份 C ABI |
+| `native/host/` | Windows 只读宿主源码 |
 | `native/tests/` | C++ 契约测试与私有管道测试进程 |
 | `schemas/` | 机器可读报告契约 |
 | `tests/` | 动态生成的输入样本及回归测试 |

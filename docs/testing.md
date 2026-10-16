@@ -12,6 +12,9 @@ Schema validation uses the declared JSON Schema dialect and accepts both success
 
 ## Host observation checks
 
+Windows native bridge tests additionally load the read-only host probe DLL in a controlled executable, validate its fixed C ABI and repeated-call resource retirement, and compare the returned executable SHA-256 to Python's streaming `hashlib.file_digest` result. This checks Windows process-level on-disk fingerprinting, not the Dying Light memory image or engine mode.
+
+
 The native `host-observation` CTest exercises the read-only [H1 observation core](host-observation.md) under a synthetic build allowlist and generated camera data. It verifies rejected identity, mode, read phase and stale frame conditions, strict source-thread access, coordinate transformation and session revocation. It is not an actual host callback or depth-buffer test.
 
 ## Bridge and guest checks

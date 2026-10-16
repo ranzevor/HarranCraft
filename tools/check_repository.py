@@ -70,6 +70,7 @@ TEXT_SUFFIXES = {
     ".java",
     ".cpp",
     ".hpp",
+    ".h",
     ".gradle",
     ".properties",
     ".cmake",

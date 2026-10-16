@@ -4,6 +4,7 @@
 
 ### Added
 
+- Read-only Windows x64 host-image probe DLL with versioned C ABI, bounded CNG SHA-256 of the current executable, strict PE validation and native/Python cross-checks.
 - C++20 H1 read-only host observation core with explicit build/mode/read-phase gates, session and camera identities, clip-space coordinate conversion and isolated native CTest.
 - Client GameTest sources for reconnect, world shutdown/reopen/replacement, thread ownership and chest-data preservation; isolated LAN revocation/recovery requires a separate explicit opt-in.
 - Native observation-peer regressions and per-scenario client completion evidence in local validation reports.
@@ -33,6 +34,7 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增 Windows x64 只读宿主身份探测 DLL、版本化 C ABI、受限 CNG 文件哈希、严格 PE 检查及原生／Python 对照验证。
 - 新增 C++20 H1 只读宿主观察核心：程序构建、模式及读阶段门禁、会话与相机身份、裁剪空间坐标转换及原生隔离 CTest。
 - 新增断连重连、世界关闭／重开／替换、线程归属及箱子数据保留的客户端 GameTest 源码；隔离 LAN 撤销与恢复需要单独显式启用。
 - 新增原生观察进程回归，并在本地验收报告中核对客户端逐场景完成记录。
