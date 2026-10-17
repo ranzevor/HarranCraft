@@ -25,6 +25,8 @@ Geometry wire, async pipe failure/retirement regressions, bounded native increme
 
 Pure-Java render identity, packed-vertex, render-record-v1 and async pipeline regressions, full cross-language golden bytes, bounded receiver CTest and native process exchange run as part of `python tools/test_bridge.py`. This batch also registers and executes the render-wire tests that were not wired into the previous baseline. The client-only baked-model sampler and its GameTest compile with the pinned Fabric configuration. [Baked-model observation](render-model.md) documents the client-thread and projection boundaries; CI does not sample live Minecraft geometry.
 
+The [source sprite protocol](texture-wire.md) additionally compiles and tests pure Java/native ARGB transfer, complete golden bytes and real process pipes. The pinned Fabric build compiles a client-only SpriteContents accessor and GameTest that reads an actual placed block's bounded NativeImage pixels. GameTests and Mixin loading are not executed in ordinary CI. No game binary or extracted image is included in build source.
+
 ## Fabric compilation
 
 ```console

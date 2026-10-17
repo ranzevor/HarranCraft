@@ -25,7 +25,8 @@ The repository provides **`hc-inspect`**, a read-only development tool for ident
 | Real Minecraft collision-shape snapshots | Authoritative Fabric VoxelShape read API, epoch and subscription gating; GameTest source compiled, native host collision untested |
 | Collision geometry transport | Java/C++ codec, bounded guest-side async pipe, native stream receiver and staged AABBs; not connected to Dying Light physics |
 | Client baked-model observation | Real static Minecraft BakedModel quads, atlas IDs, packed vertices and camera pose with logical frame keys; GameTest source, no game execution |
-| Render model stream | Java/C++ record v1, bounded client-side async publisher, native incremental receiver and candidate model lifetime tests; no Dying Light renderer or texture pixels |
+| Render model stream | Java/C++ record v1, bounded client-side async publisher, native incremental receiver and candidate model lifetime tests; no Dying Light renderer |
+| Loaded sprite source images | Client-only NativeImage pixel extraction and bounded ARGB Java/C++ record; no runtime atlas animation or host texture upload |
 | H1 host observation core | C++20 composite EXE/DLL build identity, session and camera contracts; isolated CTest, no game integration |
 | Dying Light host adapter | Not implemented |
 | In-game occlusion, native block collision, damage and TNT | Not implemented or game-tested |

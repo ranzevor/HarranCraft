@@ -36,6 +36,7 @@ STAGES = [
     "geometry-java-tests",
     "render-frame-tests",
     "render-wire-tests",
+    "texture-java-tests",
     "render-pipeline-tests",
     "geometry-pipe-tests",
     "native-frame",
@@ -45,12 +46,16 @@ STAGES = [
     "render-native-frame",
     "render-java-frame",
     "render-frame-comparison",
+    "texture-native-frame",
+    "texture-java-frame",
+    "texture-frame-comparison",
     "java-frame",
     "frame-comparison",
     "process-tests",
     "geometry-process-tests",
     "geometry-receiver-process-tests",
     "render-process-tests",
+    "texture-process-tests",
     "render-receiver-process-tests",
     "pipe-tests",
     "observation-tests",
@@ -129,6 +134,7 @@ def validate(check: Validation, arguments: list[str]) -> None:
     check.run("geometry-java-tests", ["java", "-cp", str(java), f"{PACKAGE}.GeometryFrameTests"])
     check.run("render-frame-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderFrameTests"])
     check.run("render-wire-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderWireTests"])
+    check.run("texture-java-tests", ["java", "-cp", str(java), f"{PACKAGE}.TextureWireTests"])
     check.run("render-pipeline-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderPipelineTests"])
     check.run("geometry-pipe-tests", ["java", "-cp", str(java), f"{PACKAGE}.GeometryPipeTests"])
     bin_dir = native / "Debug" if (native / "Debug").is_dir() else native
@@ -189,6 +195,26 @@ def validate(check: Validation, arguments: list[str]) -> None:
     check.save()
     if render_check["status"] != "passed":
         check.reject("render_frame_mismatch", "failed")
+    texture_native = check.run(
+        "texture-native-frame",
+        [str(bin_dir / f"hc-texture-wire-test{extension}"), "--golden"],
+    )
+    texture_java = check.run(
+        "texture-java-frame",
+        ["java", "-cp", str(java), f"{PACKAGE}.TextureWireTests", "--golden"],
+    )
+    texture_check = next(
+        stage for stage in check.report["stages"] if stage["name"] == "texture-frame-comparison"
+    )
+    texture_check["status"] = (
+        "passed"
+        if re.fullmatch(r"[0-9a-f]{672}", texture_native.strip())
+        and texture_native.strip() == texture_java.strip()
+        else "failed"
+    )
+    check.save()
+    if texture_check["status"] != "passed":
+        check.reject("texture_frame_mismatch", "failed")
     check.run("process-tests", ["java", "-cp", str(java), f"{PACKAGE}.ProcessTests", str(peer)])
     check.run(
         "geometry-process-tests",
@@ -218,6 +244,16 @@ def validate(check: Validation, arguments: list[str]) -> None:
             str(java),
             f"{PACKAGE}.RenderWireProcessTests",
             str(bin_dir / f"hc-render-peer{extension}"),
+        ],
+    )
+    check.run(
+        "texture-process-tests",
+        [
+            "java",
+            "-cp",
+            str(java),
+            f"{PACKAGE}.TextureProcessTests",
+            str(bin_dir / f"hc-texture-peer{extension}"),
         ],
     )
     check.run(

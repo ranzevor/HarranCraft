@@ -3,10 +3,12 @@ package io.ranzevor.harrancraft.test;
 import io.ranzevor.harrancraft.GuestConnections;
 import io.ranzevor.harrancraft.MinecraftCollisionShapes;
 import io.ranzevor.harrancraft.MinecraftRenderModels;
+import io.ranzevor.harrancraft.MinecraftSpriteTextures;
 import io.ranzevor.harrancraft.bridge.Frame;
 import io.ranzevor.harrancraft.bridge.GeometryFrame;
 import io.ranzevor.harrancraft.bridge.RenderFrame;
 import io.ranzevor.harrancraft.bridge.RenderWire;
+import io.ranzevor.harrancraft.bridge.TextureWire;
 import io.ranzevor.harrancraft.bridge.Session;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -64,6 +66,14 @@ public final class ClientTests implements FabricClientGameTest {
                         RenderWire record = RenderWire.snapshot(model);
                         if (!RenderWire.decode(record.encode()).equals(record)) {
                             throw new AssertionError("Baked model record lost vertex data");
+                        }
+                        var sprites = MinecraftSpriteTextures.capture(client, model);
+                        if (sprites.isEmpty() || sprites.size() > MinecraftSpriteTextures.MAX_SPRITES
+                                || sprites.stream().anyMatch(sprite ->
+                                        sprite.kind() != TextureWire.SNAPSHOT
+                                                || sprite.argb().size() != sprite.width() * sprite.height()
+                                                || !TextureWire.decode(sprite.encode()).equals(sprite))) {
+                            throw new AssertionError("Client source texture pixels were not preserved");
                         }
                     } finally {
                         render.stop();
