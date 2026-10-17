@@ -11,6 +11,7 @@
 | 接入私有管道对端及处理恢复 | [方块桥接](bridge.md) |
 | 编码与传输 Minecraft 碰撞体积 | [碰撞几何独立协议](geometry.md) |
 | 读取真实 Minecraft 客户端模型及相机身份 | [烘焙模型观察](render-model.md) |
+| 交换版本化模型四边形及相机快照 | [渲染模型记录协议](render-wire.md) |
 | 构建 Fabric 客体与运行隔离游戏测试 | [客体本地验证](guest-validation.md) |
 | 跟踪完整玩法目标 | [路线图](roadmap.md) |
 | 参与贡献 | [贡献指南](contributing.md) |

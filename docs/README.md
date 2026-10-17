@@ -11,6 +11,7 @@
 | Integrate a private-pipe peer and handle recovery | [Block bridge](bridge.md) |
 | Encode and transfer Minecraft collision volumes | [Geometry side-channel](geometry.md) |
 | Inspect real Minecraft client baked models and camera identities | [Baked-model observation](render-model.md) |
+| Exchange versioned render quads and camera snapshots | [Render model record protocol](render-wire.md) |
 | Build the Fabric guest and run isolated game tests | [Local guest validation](guest-validation.md) |
 | Follow complete gameplay milestones | [Roadmap](roadmap.md) |
 | Classify and reproduce verification | [Testing](testing.md) |

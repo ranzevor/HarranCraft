@@ -1,0 +1,56 @@
+# Render model record protocol
+
+[简体中文](zh-CN/render-wire.md) · [Baked-model observation](render-model.md) · [Architecture](architecture.md)
+
+## Source and ownership
+
+[RenderWire](../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderWire.java) serializes an immutable Minecraft client [RenderFrame](../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderFrame.java). Its C++20 counterpart is [render_wire.hpp](../include/harrancraft/render_wire.hpp). The record includes the exact caller-assigned epoch, world, camera, logical frame and capture identifiers; dimension/block position, canonical block state, camera position/yaw/pitch, model quads, atlas and sprite names, tint/shade/emission metadata and packed vertex colors, light and normals.
+
+This independent rendering record format does not alter the 512-byte block bridge v1 or the collision-geometry record v1. Atlas/sprite identifiers and quad UVs are **not** texture pixel data, resolved material parameters, dynamic lighting or evidence that the host can render the model. The current client sampler supports static baked models only.
+
+## Version 1 binary layout
+
+All integers and IEEE-754 floating-point values are little-endian. Each record contains a fixed 384-byte header and zero to 512 fixed 400-byte quads, for a maximum of **205,184 bytes**. Unused bytes must be zero; there is no native struct packing.
+
+| Offset | Bytes | Field |
+| --- | --- | --- |
+| 0 | 4 | Magic `0x31524348` |
+| 4 | 2 | Version `1` |
+| 6 | 2 | SNAPSHOT `1` or RETIRE `2` |
+| 8 | 4 | Total byte length |
+| 12 | 4 | Zero reserved |
+| 16, 24, 32, 40, 48 | 8 each | Positive epoch, world, camera, logical frame, capture |
+| 56, 60, 64 | 4 each | Signed block X, Y, Z |
+| 68 | 2 | Quad count, at most 512 |
+| 70, 72 | 2 each | Dimension and canonical state ASCII lengths |
+| 74 | 2 | Zero reserved |
+| 76, 84, 92 | 8 each | Minecraft camera position X/Y/Z (binary64) |
+| 100, 104 | 4 each | Camera yaw/pitch (binary32) |
+| 108 | 4 | Zero reserved |
+| 112 | 64 | Dimension ASCII, zero-padded |
+| 176 | 192 | Canonical state ASCII, zero-padded |
+| 368 | 16 | Zero reserved |
+
+Each quad is exactly 400 bytes:
+
+| Quad-relative offset | Bytes | Field |
+| --- | --- | --- |
+| 0 | 2 | Signed cull face (`-1` means unculled) |
+| 2 | 2 | Model face direction (`0`–`5`) |
+| 4 | 2 | Signed tint index (`-1` means none) |
+| 6, 7 | 1 each | Shade flag (`0`/`1`), light emission (`0`–`15`) |
+| 8, 10 | 2 each | Atlas and sprite identifier lengths |
+| 12 | 4 | Zero reserved |
+| 16 | 128 | Atlas identifier, printable ASCII, zero-padded |
+| 144 | 128 | Sprite identifier, printable ASCII, zero-padded |
+| 272 | 128 | Four vertices, 32 bytes each |
+
+Each vertex has five binary32 floats (local X/Y/Z and atlas U/V) followed by three raw 32-bit words (packed color, light and normal). Unknown render vertex layouts must be rejected by the client sampler rather than reinterpreted.
+
+SNAPSHOT requires a nonempty canonical block state; a valid invisible model has zero quads. RETIRE carries the same five-part identity and position but an empty state, zero camera and zero quads. Record construction and decoding reject unknown versions, excessive lengths/counts, nonzero padding, malformed ASCII, invalid face/tint/shade metadata, non-finite positions/UV/camera values and truncated data. A stream reader validates total length before allocating the full record.
+
+## Process verification and remaining integration
+
+The Java/C++ golden fixture compares **all 784 bytes** of an identical sample render record. The independent C++ test validates maximum records, retirement, malformed headers, truncated data and non-finite floating-point values. [RenderWireProcessTests](../guest/src/test/java/io/ranzevor/harrancraft/bridge/RenderWireProcessTests.java) passes snapshots and retirement records through a real Java-to-C++ process pipe to [hc-render-peer](../native/tests/render_peer.cpp), comparing the returned bytes exactly. Client GameTest source additionally serializes a real diamond-block capture, but CI compiles that test without starting Minecraft.
+
+The format does not yet have a production render publisher/receiver, atlas image transport, draw-call reconstruction, native graphics submission or proof of real Minecraft/Dying Light frame timing. Such work must retain ownership, explicitly refuse stale identities, resolve texture pixels and establish host depth/projection correspondence separately.

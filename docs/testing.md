@@ -35,6 +35,10 @@ The native `geometry-receiver` CTest verifies incremental and coalesced stream f
 
 The pure Java RenderFrameTests exercise fixed Minecraft baked-quad word decoding, finite geometry/UV and camera checks, source immutability, maximum 512 quads, logical frame/capture monotonicity, identity mismatch, wrong dimension, explicit revocation and cross-thread refusal. The client-only MinecraftRenderModels source is compiled against pinned Yarn/Fabric, with GameTest source for the actual model of a placed diamond block and a subsequent air state. Fabric compilation is not GameTest execution or Dying Light frame/depth correspondence. [Rendering scope](render-model.md)
 
+## Render record contract checks
+
+The separate [render record v1](render-wire.md) has fixed-width little-endian Java/C++ codec checks, a complete 784-byte cross-language golden fixture, maximum 205,184-byte record bounds, negative tests for invalid versions/flags/text/padding/floats and early truncation refusal. The Java-to-C++ native echo process verifies whole record bytes, an empty-model snapshot and a retirement record. A real Minecraft GameTest remains unrun; the cross-process suite does not establish texture pixels, projection alignment or host rendering.
+
 ## Bridge and guest checks
 
 `python tools/test_bridge.py` compiles C++ with strict warnings and Java with `--release 21 -Xlint:all -Werror`, runs the wire/core/lifecycle suites, compares the complete 512-byte reference frame, and exercises three actual Java/C++ pipe scenarios against a controlled world. It checks command ordering, receipt replay/conflicts, generations, capacities, failed sends and cleanup. It does not instantiate Minecraft.
