@@ -11,6 +11,7 @@
 | Minecraft 客体 | 通过 Fabric 运行真实 Minecraft | Ubuntu Fabric 源码编译、重映射及生产 JAR 检查通过；游戏内 GameTest 未运行 |
 | 客户端烘焙模型及渲染协议 | Minecraft 1.21.4 固定 Yarn/Fabric、Java 21／C++20 | 静态方块四边形和有界版本化编解码；游戏执行及宿主帧关联尚未验收 |
 | 已加载源精灵及材质传输 | Minecraft 1.21.4 SpriteContents／NativeImage、Java 21／C++20 | 有界静态源图（单图≤64×64、模型≤16 种）、客户端重载监听、异步批次和原生 CPU 材质缓存；实机回调、最终图集和宿主显存上传尚未验收 |
+| 受控双相机投影 | C++20、显式版本 1 相机／标定输入 | [有界当前采集投影](camera-projection.md)、解析值及实时接收器生命周期回归；实际游戏相机／深度采集和同步尚未验收 |
 | 桥接核心及原生测试进程 | JDK 21、C++20、Linux x86_64／Windows x64 | Linux/GCC 与 Windows/MinGW 分别执行严格编译、参考帧及真实进程检查；各版本结果记录于 [PR #2](https://github.com/ranzevor/HarranCraft/pull/2)；MSVC 尚未验收 |
 | 其他消光作品 | 第二代／《困兽》 | 不在首阶段目标内 |
 | 联机模式 | 合作／入侵／其他多人 | 不支持；未来宿主必须在代码中拒绝 |

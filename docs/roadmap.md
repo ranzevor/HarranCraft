@@ -24,4 +24,6 @@ The isolated native geometry ledger stages mapped AABBs with bounded ownership b
 
 H1 observation experiments remain independently testable. Keep host-changing code gated by actual build, mode and engine-phase evidence. Continue source and protocol work without waiting for an unrelated game environment.
 
+The [controlled projection contract](camera-projection.md) provides similarity calibration, explicit camera/viewport conventions and a bounded current capture tied to live material, geometry and host observation identities. This supports H2-B calibration work; the caller-supplied association and projection parameters still require actual game sampling and synchronization evidence before H3 acceptance.
+
 The long-term scope remains full dual-runtime fusion. Replacing models/textures, window overlays and guest-only interactions cannot satisfy H3–H6.

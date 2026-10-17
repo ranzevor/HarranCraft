@@ -25,6 +25,8 @@ python tools/test_bridge.py
 
 `python tools/test_bridge.py` 还包含独立几何记录、异步管道故障／回收、原生有界分片接收及 Java／C++ 跨进程验证；协议见[几何传输说明](geometry.md)，不会启动游戏、向消光传输或执行 GameTest。
 
+已注册的 `camera-projection` 与 `capture-projection` CTest 由同一入口的 `native-tests` 阶段执行，核对左右手系、两种深度范围和反向 Z 的解析投影值、精确 AABB 标定边界，并通过实际解码的材质／几何记录及受控宿主观察器检查当前采集的资源归属。相机／配置变化、材质缺失、来源撤销和旧身份必须使投影结果失效。这些属于[受控相机契约](camera-projection.md)，不读取任一游戏的实时投影矩阵或场景深度。
+
 `python tools/test_bridge.py` 纳入纯 Java 渲染身份、压缩顶点、渲染记录和异步发布故障回归、完整跨语言参考帧、原生接收 CTest 及真实跨进程交换。仅客户端的烘焙模型采样器和 GameTest 源码通过固定 Fabric 配置编译；详见[烘焙模型观察](render-model.md)，CI 不运行真实 Minecraft 几何采样。
 
 [源精灵像素与材质协调契约](texture-wire.md)纳入 Java／C++ ARGB、完整参考帧、双异步输出和原生有界材质接收。已注册的 `material-coordinator` CTest 覆盖跨通道顺序、样本各分片位置、完整清单激活、替换／撤销、准入边界、绝对期限，以及同一实例使用更高代次恢复。`MaterialPipelineTests` 检查客户端所属线程不再调用发布器时，异步写入／刷新失败仍会立即取消双方输出。

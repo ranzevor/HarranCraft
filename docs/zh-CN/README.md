@@ -13,6 +13,7 @@
 | 读取真实 Minecraft 客户端模型及相机身份 | [烘焙模型观察](render-model.md) |
 | 交换版本化模型四边形及相机快照 | [渲染模型记录协议](render-wire.md) |
 | 读取源精灵图像并验证 ARGB 像素传输 | [精灵源图像传输](texture-wire.md) |
+| 标定坐标并绑定受控双相机投影 | [相机投影契约](camera-projection.md) |
 | 构建 Fabric 客体与运行隔离游戏测试 | [客体本地验证](guest-validation.md) |
 | 跟踪完整玩法目标 | [路线图](roadmap.md) |
 | 参与贡献 | [贡献指南](contributing.md) |
