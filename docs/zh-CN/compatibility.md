@@ -10,7 +10,7 @@
 | 消光宿主 | 第一代，Windows x64，单人 | 尚未实现，没有已验证支持的游戏版本 |
 | Minecraft 客体 | 通过 Fabric 运行真实 Minecraft | Ubuntu Fabric 源码编译、重映射及生产 JAR 检查通过；游戏内 GameTest 未运行 |
 | 客户端烘焙模型及渲染协议 | Minecraft 1.21.4 固定 Yarn/Fabric、Java 21／C++20 | 静态方块四边形和有界版本化编解码；游戏执行及宿主帧关联尚未验收 |
-| 已加载源精灵及像素协议 | Minecraft 1.21.4 SpriteContents／NativeImage、Java 21／C++20 | 客户端 Mixin 只读拷贝（单图≤64×64，模型≤16 种）及 ARGB 编解码；游戏运行、最终显存图集及消光纹理上传尚未验证 |
+| 已加载源精灵及材质传输 | Minecraft 1.21.4 SpriteContents／NativeImage、Java 21／C++20 | 有界静态源图（单图≤64×64、模型≤16 种）、客户端重载监听、异步批次和原生 CPU 材质缓存；实机回调、最终图集和宿主显存上传尚未验收 |
 | 桥接核心及原生测试进程 | JDK 21、C++20、Linux x86_64／Windows x64 | Linux/GCC 与 Windows/MinGW 严格编译、参考帧及真实进程测试通过；MSVC 尚未验收 |
 | 其他消光作品 | 第二代／《困兽》 | 不在首阶段目标内 |
 | 联机模式 | 合作／入侵／其他多人 | 不支持；未来宿主必须在代码中拒绝 |

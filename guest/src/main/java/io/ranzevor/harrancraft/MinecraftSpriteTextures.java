@@ -1,9 +1,12 @@
 package io.ranzevor.harrancraft;
 
 import io.ranzevor.harrancraft.bridge.Frame;
+import io.ranzevor.harrancraft.bridge.MaterialPublisher;
+import io.ranzevor.harrancraft.bridge.MaterialReloadRegistry;
 import io.ranzevor.harrancraft.bridge.RenderFrame;
 import io.ranzevor.harrancraft.bridge.TextureWire;
 import io.ranzevor.harrancraft.mixin.SpriteContentsAccessor;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +34,24 @@ public final class MinecraftSpriteTextures {
     private record SpriteKey(String atlas, String sprite) {}
 
     private MinecraftSpriteTextures() {}
+
+    public static MaterialPublisher beginPublisher(
+            MinecraftClient client, long epoch, long worldId, long cameraId,
+            OutputStream modelOutput, Runnable cancelModel,
+            OutputStream textureOutput, Runnable cancelTexture) {
+        var modelSource = MinecraftRenderModels.begin(client, epoch, worldId, cameraId);
+        MaterialPublisher publisher = new MaterialPublisher(
+                modelSource, frame -> capture(client, frame),
+                epoch, worldId, cameraId,
+                modelOutput, cancelModel, textureOutput, cancelTexture);
+        try {
+            MaterialReloadRegistry.track(publisher);
+            return publisher;
+        } catch (RuntimeException error) {
+            publisher.close();
+            throw error;
+        }
+    }
 
     public static List<TextureWire> capture(MinecraftClient client, RenderFrame render) {
         Objects.requireNonNull(render);

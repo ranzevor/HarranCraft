@@ -34,8 +34,16 @@
 
 五项身份来自调用方，不等于已校准的消光帧。SNAPSHOT 必须有完整像素、非负图集坐标，UV 均有限、位于 [0,1] 且最小值小于最大值。RETIRE 保留图集／精灵标识，其余图像尺寸、位置、UV 和像素全零。双端拒绝非法版本、保留位、文本、尺寸、像素数量、浮点及截断数据；Java 在分配完整缓冲前检查长度上限。
 
+## 多精灵材质归属及资源重载
+
+[MaterialPublisher](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/MaterialPublisher.java) 先在**同一次客户端采集**取得不可变烘焙模型及其全部源精灵，核对最多 16 个独立图集／精灵身份，拒绝缺失、重复或错误来源，然后才分别入队模型和源像素。现有 \`RenderPipe\` 和新的 \`TexturePipe\` 使用不同的调用方自有输出流；纹理通道最多排队**两个完整材质批次**，由守护线程逐批写入，不阻塞客户端采样线程。任一通道失败即撤销两条通路。不同流之间不保证先后顺序；原生消费者必须先有权威模型精灵清单才可使用贴图，未来正式宿主协调器需要显式处理乱序，而不能依赖线程调度。
+
+[MaterialCache](../../include/harrancraft/material_cache.hpp) 只保留一个当前模型采集所需的 CPU 源像素，**全部要求的精灵到齐前绝不对外提供可用材质**。[MaterialReceiver](../../include/harrancraft/material_receiver.hpp) 采用一条最大 16,704 字节的有界记录缓冲处理任意分片；拒绝未知、重复、旧代次或跨世界／相机／帧／采集身份的精灵和格式损坏／截断记录，并在 EOF 不完整、通道终止、撤回或校验失败时撤销全部像素。模型变更立即丢弃旧像素；新会话需要更高代次。这些类型不创建或销毁 GPU 纹理句柄。
+
+Minecraft 客户端的 [HarranCraftClient](../../guest/src/main/java/io/ranzevor/harrancraft/HarranCraftClient.java) 注册 Fabric \`CLIENT_RESOURCES\` 资源重载监听器。[MaterialReloadRegistry](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/MaterialReloadRegistry.java) 最多持有四个活动发布器，资源包重载时关闭它们已经拥有的模型／纹理输出端点。客户端调用方仍须检查工作线程真实退出及清理异常；关闭输出不等于宿主已安全销毁图形资源。当前 CI 未启动游戏，不证明实际资源重载回调或 Mixin 已执行。
+
 ## 验证与接入边界
 
 验证入口运行 Java 编解码、原生 CTest、完整 336 字节跨语言参考帧逐字节比对、真实 Java→C++ 进程管道往返，以及非法／截断记录拒绝。Fabric 编译客户端 NativeImage 访问器和实际方块源纹理采样的 GameTest 源码；CI **不启动 Minecraft，也不执行 GameTest**。
 
-本阶段尚无正式纹理材质发送通道、消光显存上传或原生纹理缓存。后续需要将多个源精灵记录与模型快照对应，并处理资源重载、动画、染色、动态光照及双相机深度帧关联。仓库不提交游戏贴图及其他资产。
+已实现客户端可选材质发布、原生有界接收和 CPU 像素候选缓存，并通过隔离测试核验模型清单和多精灵完整性交付；但尚未接入消光正式宿主。后续仍需实机资源重载、双通道乱序协调、GPU 上传／释放、动画、染色、动态光照和双相机深度帧关联。仓库不提交游戏贴图及其他资产。

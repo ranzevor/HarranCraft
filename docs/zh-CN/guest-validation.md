@@ -25,7 +25,7 @@ python tools/test_bridge.py
 
 `python tools/test_bridge.py` 纳入纯 Java 渲染身份、压缩顶点、渲染记录和异步发布故障回归、完整跨语言参考帧、原生接收 CTest 及真实跨进程交换；上一版本漏接入的渲染协议测试已补充注册并运行。仅客户端的烘焙模型采样器和 GameTest 源码通过固定 Fabric 配置编译；详见[烘焙模型观察](render-model.md)，CI 不运行真实 Minecraft 几何采样。
 
-[源精灵像素协议](texture-wire.md)额外包含纯 Java／C++ ARGB 像素验收、完整参考帧逐字节比对及真实进程管道。固定 Fabric 构建编译仅客户端的 SpriteContents 访问器以及从已加载方块读取 NativeImage 的 GameTest 源码；普通 CI 不执行 GameTest 或实际 Mixin 加载，也不将任何游戏二进制或素材加入仓库。
+[源精灵像素及材质批次契约](texture-wire.md)额外验证纯 Java／C++ ARGB、完整参考帧、双异步输出、原生有界材质接收、资源重载取消及真实 Java／C++ 进程管道。固定 Fabric 构建编译仅客户端 SpriteContents 访问器、材质发布入口、CLIENT_RESOURCES 资源重载监听器和读取 NativeImage 的 GameTest 源码；普通 CI 不执行 GameTest 或实际 Mixin 加载，也不将任何游戏二进制或素材加入仓库。
 
 ## Fabric 编译
 

@@ -37,6 +37,7 @@ STAGES = [
     "render-frame-tests",
     "render-wire-tests",
     "texture-java-tests",
+    "material-pipeline-tests",
     "render-pipeline-tests",
     "geometry-pipe-tests",
     "native-frame",
@@ -56,6 +57,7 @@ STAGES = [
     "geometry-receiver-process-tests",
     "render-process-tests",
     "texture-process-tests",
+    "material-process-tests",
     "render-receiver-process-tests",
     "pipe-tests",
     "observation-tests",
@@ -135,6 +137,9 @@ def validate(check: Validation, arguments: list[str]) -> None:
     check.run("render-frame-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderFrameTests"])
     check.run("render-wire-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderWireTests"])
     check.run("texture-java-tests", ["java", "-cp", str(java), f"{PACKAGE}.TextureWireTests"])
+    check.run(
+        "material-pipeline-tests", ["java", "-cp", str(java), f"{PACKAGE}.MaterialPipelineTests"]
+    )
     check.run("render-pipeline-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderPipelineTests"])
     check.run("geometry-pipe-tests", ["java", "-cp", str(java), f"{PACKAGE}.GeometryPipeTests"])
     bin_dir = native / "Debug" if (native / "Debug").is_dir() else native
@@ -254,6 +259,16 @@ def validate(check: Validation, arguments: list[str]) -> None:
             str(java),
             f"{PACKAGE}.TextureProcessTests",
             str(bin_dir / f"hc-texture-peer{extension}"),
+        ],
+    )
+    check.run(
+        "material-process-tests",
+        [
+            "java",
+            "-cp",
+            str(java),
+            f"{PACKAGE}.MaterialProcessTests",
+            str(bin_dir / f"hc-material-peer{extension}"),
         ],
     )
     check.run(

@@ -4,6 +4,7 @@
 
 ### Added
 
+- Bounded multi-sprite material batch publisher, client-resource reload cancellation, and native CPU texture cache with complete-manifest gates, incremental source-pixel reception and Java/C++ process tests.
 - Client-only loaded SpriteContents NativeImage pixel sampling with atlas UV/placement metadata, bounded ARGB Java/C++ record v1, golden-byte and native process regressions; no game textures committed.
 - Bounded client render publisher and owner-thread-only native stream receiver, with fail-closed camera/frame/capture identity checks, backpressure, stale-model retirement and process/worker regressions.
 - Version 1 Java/C++ render-model records with bounded quads, atlas/sprite identifiers, packed vertex attributes, camera/frame identities, strict decoding and complete cross-process binary checks.
@@ -43,6 +44,7 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增有界多精灵材质异步批次、客户端资源重载时取消输出、原生 CPU 源像素完整性缓存与流接收，并补充 Java／C++ 进程回归。
 - 新增客户端 SpriteContents／NativeImage 已加载源图像只读采样、图集 UV／坐标、有界 ARGB Java／C++ 协议及跨语言／跨进程回归，不提交游戏贴图。
 - 新增有界客户端渲染发布器与原生分片接收器，拒绝错误相机／帧／采集身份，覆盖背压、断连撤销及真实跨进程与线程验收。
 - 新增版本 1 Java／C++ 渲染模型记录，包含有界四边形、图集／精灵标识、打包顶点及相机／帧身份，并通过严格解码及完整跨进程二进制验证。

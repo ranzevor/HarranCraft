@@ -103,6 +103,10 @@ tasks.register('verifyGuestJar') {
                     'io/ranzevor/harrancraft/MinecraftSpriteTextures.class',
                     'io/ranzevor/harrancraft/mixin/SpriteContentsAccessor.class',
                     'io/ranzevor/harrancraft/bridge/TextureWire.class',
+                    'io/ranzevor/harrancraft/bridge/TexturePipe.class',
+                    'io/ranzevor/harrancraft/bridge/MaterialPublisher.class',
+                    'io/ranzevor/harrancraft/bridge/MaterialReloadRegistry.class',
+                    'io/ranzevor/harrancraft/HarranCraftClient.class',
                     'io/ranzevor/harrancraft/bridge/RenderFrame.class',
                     'io/ranzevor/harrancraft/bridge/RenderWire.class',
                     'io/ranzevor/harrancraft/bridge/RenderPipe.class',
@@ -113,6 +117,7 @@ tasks.register('verifyGuestJar') {
             }
             def manifest = new groovy.json.JsonSlurper().parse(archive.getInputStream(archive.getEntry('fabric.mod.json')))
             if (manifest.id != 'harrancraft' || !(manifest.entrypoints instanceof Map) ||
+                    manifest.entrypoints.client != ['io.ranzevor.harrancraft.HarranCraftClient'] ||
                     ['fabric-gametest', 'fabric-client-gametest'].any { test ->
                         manifest.entrypoints.containsKey(test)
                     }) {
