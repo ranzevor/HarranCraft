@@ -3,6 +3,8 @@ package io.ranzevor.harrancraft;
 import io.ranzevor.harrancraft.bridge.Frame;
 import io.ranzevor.harrancraft.bridge.RenderCaptureSession;
 import io.ranzevor.harrancraft.bridge.RenderFrame;
+import io.ranzevor.harrancraft.bridge.RenderPublisher;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
@@ -42,6 +44,14 @@ public final class MinecraftRenderModels {
         Entity focused = camera.getFocusedEntity();
         return new RenderCaptureSession(epoch, worldId, cameraId, dimension,
                 (stamp, key) -> capture(client, server, world, camera, focused, stamp, key));
+    }
+
+    /** Attaches caller-owned render output after verifying the client world. */
+    public static RenderPublisher beginPublisher(
+            MinecraftClient client, long epoch, long worldId, long cameraId,
+            OutputStream output, Runnable cancelIo) {
+        RenderCaptureSession capture = begin(client, epoch, worldId, cameraId);
+        return new RenderPublisher(capture, epoch, worldId, cameraId, output, cancelIo);
     }
 
     private static void requireClientThread(MinecraftClient client) {

@@ -49,8 +49,16 @@
 
 SNAPSHOT 要求非空规范状态；不可见模型可以有零个四边形。RETIRE 保留五项身份及位置，但状态为空、相机全零、四边形数量为零。构造和解码会拒绝未知版本、超长记录、越限数量、非零填充、非法 ASCII、错误面向／染色／阴影、非有限位置／UV／相机以及截断数据。流式读取会先核验长度，再分配完整记录。
 
+## 客户端异步发布与原生有界接收
+
+可选 [RenderPublisher](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderPublisher.java) 通过 [RenderPipe](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderPipe.java) 将有效的 [RenderCaptureSession](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderCaptureSession.java) 连接至调用方自有的私有输出流。客户端线程仅采样、非阻塞排队，独立守护线程处理实际写入、取消与关闭。最多保留八条排队记录，错代次／世界／相机、帧号不递增或捕获号缺失／重复都拒绝。队列饱和、写入失败、源失效等会关闭发布通路；调用方保留句柄，独立检查线程退出与清理异常。建立数据源失败时，尚未接管调用方流。
+
+[RenderReceiver](../../include/harrancraft/render_receiver.hpp) 在一个所属线程上解析任意分片，最多缓存一条 205,184 字节记录，并在读取记录主体前确认长度。`begin(epoch, world, camera, dimension)` 明确预期身份，仅接收严格递增的逻辑帧、连续捕获号，最多暂存十六个模型位置。空模型、RETIRE、正常 EOF 或主动停止撤销相应数据；未知格式、EOF 截断、身份变化、重复／缺失捕获、旧帧及容量溢出撤销整个候选模型集合。恢复须以更高代次重新建会话。
+
+现有链路只有客户端可选发布接口、原生记录解码及模型候选管理，**尚未建立消光原生正式渲染端点**。上述类型不持有引擎图形资源、贴图像素或跨运行时同步绘制。即使失效前仍有记录开始写入，原生侧也必须拒绝旧会话身份。
+
 ## 跨进程验证与未完成范围
 
-Java/C++ 参考样本逐字节比较完整 **784 字节**渲染记录；独立 C++ 测试覆盖最大记录、撤销、非法帧头、截断和浮点异常。[RenderWireProcessTests](../../guest/src/test/java/io/ranzevor/harrancraft/bridge/RenderWireProcessTests.java) 通过真实 Java→C++ 进程管道向 [hc-render-peer](../../native/tests/render_peer.cpp) 发送模型及撤销记录，并完整比对回传字节。客户端 GameTest 源码还会对真实钻石方块的模型快照执行序列化，但 CI 只编译该测试，不运行 Minecraft。
+现已正式纳入验证入口的 Java/C++ 参考样本逐字节比较完整 **784 字节**渲染记录；独立 C++ 测试覆盖最大记录、撤销、非法帧头、截断和浮点异常。[RenderWireProcessTests](../../guest/src/test/java/io/ranzevor/harrancraft/bridge/RenderWireProcessTests.java) 通过真实 Java→C++ 进程管道向 [hc-render-peer](../../native/tests/render_peer.cpp) 发送模型及撤销记录，并完整比对回传字节。客户端 GameTest 源码还会对真实钻石方块的模型快照执行序列化，但 CI 只编译该测试，不运行 Minecraft。
 
-目前尚未接入正式渲染发布／接收通道、纹理图集图像传输、绘制调用还原、消光原生图形提交或真实双运行时帧时间对应。后续需独立处理数据所有权、旧身份拒绝、纹理像素以及宿主深度和投影矩阵关联。
+已实现客户端可选发布器及独立原生接收器，并在受控进程内验证；尚未形成实际 Minecraft→消光渲染通路，缺少宿主适配、纹理图集图像传输、绘制调用还原、原生图形提交和双运行时帧时间对应。后续需独立处理数据所有权、旧身份拒绝、纹理像素以及宿主深度和投影矩阵关联。

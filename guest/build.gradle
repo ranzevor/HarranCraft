@@ -101,6 +101,9 @@ tasks.register('verifyGuestJar') {
                     'io/ranzevor/harrancraft/GuestConnections.class',
                     'io/ranzevor/harrancraft/MinecraftRenderModels.class',
                     'io/ranzevor/harrancraft/bridge/RenderFrame.class',
+                    'io/ranzevor/harrancraft/bridge/RenderWire.class',
+                    'io/ranzevor/harrancraft/bridge/RenderPipe.class',
+                    'io/ranzevor/harrancraft/bridge/RenderPublisher.class',
                     'io/ranzevor/harrancraft/bridge/RenderCaptureSession.class',
                     'io/ranzevor/harrancraft/mixin/WorldChunkMixin.class']) {
                 if (!names.contains(required)) throw new GradleException('Missing mod entry: ' + required)

@@ -37,7 +37,7 @@ The pure Java RenderFrameTests exercise fixed Minecraft baked-quad word decoding
 
 ## Render record contract checks
 
-The separate [render record v1](render-wire.md) has fixed-width little-endian Java/C++ codec checks, a complete 784-byte cross-language golden fixture, maximum 205,184-byte record bounds, negative tests for invalid versions/flags/text/padding/floats and early truncation refusal. The Java-to-C++ native echo process verifies whole record bytes, an empty-model snapshot and a retirement record. A real Minecraft GameTest remains unrun; the cross-process suite does not establish texture pixels, projection alignment or host rendering.
+The registered [render record v1](render-wire.md) checks fixed-width little-endian Java/C++ codecs, complete 784-byte cross-language golden bytes, maximum 205,184-byte bounds, invalid versions/flags/text/padding/floats and early truncation refusal. Native `render-receiver` CTest verifies arbitrary fragmentation, identity changes, frame/capture monotonicity, staged position limits, truncation and EOF revocation. Pure Java `RenderPipelineTests` verifies bounded asynchronous output, source failure, wrong identities, stale capture, overflow, cancellation and worker retirement; `RenderReceiverProcessTests` sends genuine Java bytes and asynchronously published records into an independent native receiver. The Java-to-C++ native echo process verifies whole record bytes, an empty-model snapshot and a retirement record. A real Minecraft GameTest remains unrun; the cross-process suite does not establish texture pixels, projection alignment or host rendering.
 
 ## Bridge and guest checks
 

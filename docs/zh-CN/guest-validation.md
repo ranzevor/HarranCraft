@@ -23,7 +23,7 @@ python tools/test_bridge.py
 
 `python tools/test_bridge.py` 还包含独立几何记录、异步管道故障／回收、原生有界分片接收及 Java／C++ 跨进程验证；协议见[几何传输说明](geometry.md)，不会启动游戏、向消光传输或执行 GameTest。
 
-`python tools/test_bridge.py` 包含纯 Java 渲染身份、压缩顶点与版本化渲染记录回归、完整跨语言参考字节及原生进程交换。仅客户端的烘焙模型采样器和 GameTest 源码通过固定 Fabric 配置编译；详见[烘焙模型观察](render-model.md)，CI 不运行真实 Minecraft 几何采样。
+`python tools/test_bridge.py` 纳入纯 Java 渲染身份、压缩顶点、渲染记录和异步发布故障回归、完整跨语言参考帧、原生接收 CTest 及真实跨进程交换；上一版本漏接入的渲染协议测试已补充注册并运行。仅客户端的烘焙模型采样器和 GameTest 源码通过固定 Fabric 配置编译；详见[烘焙模型观察](render-model.md)，CI 不运行真实 Minecraft 几何采样。
 
 ## Fabric 编译
 

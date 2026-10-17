@@ -35,16 +35,23 @@ STAGES = [
     "lifecycle-tests",
     "geometry-java-tests",
     "render-frame-tests",
+    "render-wire-tests",
+    "render-pipeline-tests",
     "geometry-pipe-tests",
     "native-frame",
     "geometry-native-frame",
     "geometry-java-frame",
     "geometry-frame-comparison",
+    "render-native-frame",
+    "render-java-frame",
+    "render-frame-comparison",
     "java-frame",
     "frame-comparison",
     "process-tests",
     "geometry-process-tests",
     "geometry-receiver-process-tests",
+    "render-process-tests",
+    "render-receiver-process-tests",
     "pipe-tests",
     "observation-tests",
 ]
@@ -121,6 +128,8 @@ def validate(check: Validation, arguments: list[str]) -> None:
     check.run("lifecycle-tests", ["java", "-cp", str(java), f"{PACKAGE}.LifecycleTests"])
     check.run("geometry-java-tests", ["java", "-cp", str(java), f"{PACKAGE}.GeometryFrameTests"])
     check.run("render-frame-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderFrameTests"])
+    check.run("render-wire-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderWireTests"])
+    check.run("render-pipeline-tests", ["java", "-cp", str(java), f"{PACKAGE}.RenderPipelineTests"])
     check.run("geometry-pipe-tests", ["java", "-cp", str(java), f"{PACKAGE}.GeometryPipeTests"])
     bin_dir = native / "Debug" if (native / "Debug").is_dir() else native
     extension = ".exe" if os.name == "nt" else ""
@@ -160,6 +169,26 @@ def validate(check: Validation, arguments: list[str]) -> None:
     check.save()
     if geometry_check["status"] != "passed":
         check.reject("geometry_frame_mismatch", "failed")
+    native_render = check.run(
+        "render-native-frame",
+        [str(bin_dir / f"hc-render-wire-test{extension}"), "--golden"],
+    )
+    java_render = check.run(
+        "render-java-frame",
+        ["java", "-cp", str(java), f"{PACKAGE}.RenderWireTests", "--golden"],
+    )
+    render_check = next(
+        stage for stage in check.report["stages"] if stage["name"] == "render-frame-comparison"
+    )
+    render_check["status"] = (
+        "passed"
+        if re.fullmatch(r"[0-9a-f]{1568}", native_render.strip())
+        and native_render.strip() == java_render.strip()
+        else "failed"
+    )
+    check.save()
+    if render_check["status"] != "passed":
+        check.reject("render_frame_mismatch", "failed")
     check.run("process-tests", ["java", "-cp", str(java), f"{PACKAGE}.ProcessTests", str(peer)])
     check.run(
         "geometry-process-tests",
@@ -179,6 +208,26 @@ def validate(check: Validation, arguments: list[str]) -> None:
             str(java),
             f"{PACKAGE}.GeometryReceiverProcessTests",
             str(bin_dir / f"hc-geometry-receiver-peer{extension}"),
+        ],
+    )
+    check.run(
+        "render-process-tests",
+        [
+            "java",
+            "-cp",
+            str(java),
+            f"{PACKAGE}.RenderWireProcessTests",
+            str(bin_dir / f"hc-render-peer{extension}"),
+        ],
+    )
+    check.run(
+        "render-receiver-process-tests",
+        [
+            "java",
+            "-cp",
+            str(java),
+            f"{PACKAGE}.RenderReceiverProcessTests",
+            str(bin_dir / f"hc-render-receiver-peer{extension}"),
         ],
     )
     check.run(

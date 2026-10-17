@@ -6,6 +6,7 @@ import io.ranzevor.harrancraft.MinecraftRenderModels;
 import io.ranzevor.harrancraft.bridge.Frame;
 import io.ranzevor.harrancraft.bridge.GeometryFrame;
 import io.ranzevor.harrancraft.bridge.RenderFrame;
+import io.ranzevor.harrancraft.bridge.RenderWire;
 import io.ranzevor.harrancraft.bridge.Session;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -59,6 +60,10 @@ public final class ClientTests implements FabricClientGameTest {
                                                 || quad.atlas().isEmpty()
                                                 || quad.sprite().isEmpty())) {
                             throw new AssertionError("Client baked block model was not captured");
+                        }
+                        RenderWire record = RenderWire.snapshot(model);
+                        if (!RenderWire.decode(record.encode()).equals(record)) {
+                            throw new AssertionError("Baked model record lost vertex data");
                         }
                     } finally {
                         render.stop();

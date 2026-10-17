@@ -4,6 +4,7 @@
 
 ### Added
 
+- Bounded client render publisher and owner-thread-only native stream receiver, with fail-closed camera/frame/capture identity checks, backpressure, stale-model retirement and process/worker regressions.
 - Version 1 Java/C++ render-model records with bounded quads, atlas/sprite identifiers, packed vertex attributes, camera/frame identities, strict decoding and complete cross-process binary checks.
 - Client-only Minecraft baked static-block model sampler with retained quad vertices, UV, sprite identities and camera pose; bounded immutable render frames, source-thread/lifetime gates and pure-Java/GameTest source regressions.
 - Bounded native geometry stream receiver with incremental framing, strict session/revision refusal, EOF cleanup and real Java/C++ pipe integration regressions.
@@ -41,6 +42,7 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增有界客户端渲染发布器与原生分片接收器，拒绝错误相机／帧／采集身份，覆盖背压、断连撤销及真实跨进程与线程验收。
 - 新增版本 1 Java／C++ 渲染模型记录，包含有界四边形、图集／精灵标识、打包顶点及相机／帧身份，并通过严格解码及完整跨进程二进制验证。
 - 新增 Minecraft 客户端静态烘焙模型采样、真实四边形顶点／UV／精灵标识及相机姿态，并完善有界不可变快照、线程／代次门禁和 Java／GameTest 源码回归。
 - 新增有界原生几何流接收器、增量分帧、会话／修订号拒绝、EOF 清理及真实 Java／C++ 管道回归。
