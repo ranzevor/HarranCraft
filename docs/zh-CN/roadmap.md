@@ -18,9 +18,9 @@
 
 ## H2 验收顺序
 
-**H2-A 方块事件与双向 IPC：** 已有源码实现和受控 Java／C++ 进程测试。固定依赖解析、Fabric 编译及生产 JAR 检查已在 Ubuntu/JDK 21 的 [CI #38892925451](https://github.com/ranzevor/HarranCraft/actions/runs/38892925451) 通过。Linux 和 Windows/MinGW 原生进程检查按版本分别记录于 [PR #2](https://github.com/ranzevor/HarranCraft/pull/2)。继续[本地验证](guest-validation.md)：服务端／客户端 GameTest、Windows Fabric 构建、截图及真实世界／模式转换。客体接收嵌入式私有管道，本批不包含最终用户启动器或消光端点。
+**H2-A 方块事件与双向 IPC：** 已有源码实现和受控 Java／C++ 进程测试。固定依赖解析、Fabric 编译及生产 JAR 检查已在 Ubuntu/JDK 21 的 [CI #38892925451](https://github.com/ranzevor/HarranCraft/actions/runs/38892925451) 通过；普通云端 Fabric CI 仍仅编译。[本地日志](validation-20261017.md)记录服务端 GameTest 3/3 通过及客户端首次桥接接入失败；所附报告将直接 Gradle 执行归于 `b1b6234eb81955cc170cc5e8ce66df5191073ca4`，日志未独立证明这些命令的源码身份。继续[本地验证](guest-validation.md)：全部七项客户端场景、三张截图、真实世界／模式转换及完整 Windows Fabric 生产 JAR 检查。Linux 和 Windows/MinGW 原生进程检查按版本分别记录于 [PR #2](https://github.com/ranzevor/HarranCraft/pull/2)。客体接收嵌入式私有管道，本批不包含最终用户启动器或消光端点。
 
-**H2-B 真实客体图形输出：** 已有静态 BakedModel 采样、独立 Java／C++ 渲染记录、可选客户端异步发布及原生候选接收与失效控制；已新增源精灵 ARGB 异步批次发布、原生完整性候选缓存及资源重载撤销，仍需完整动态材质／最终显存图集、实际消光绘制、双相机深度标定和游戏验证。先完成 H2-A 实机验收，再传输渲染网格并证明真实帧、相机投影及消光深度对应，才能推进 H3。流体、方块实体、最终光照及宿主遮挡仍需单独完成。
+**H2-B 真实客体图形输出：** 已有静态 BakedModel 采样、独立 Java／C++ 渲染记录、可选客户端异步发布及原生候选接收与失效控制；已新增源精灵 ARGB 异步批次发布、原生完整性候选缓存及资源重载撤销。本地客户端失败时尚未执行模型／像素采样，也未验证重载回调；仍需完整动态材质／最终显存图集、实际消光绘制、双相机深度标定和游戏验证。先完成 H2-A 实机验收，再传输渲染网格并证明真实帧、相机投影及消光深度对应，才能推进 H3。流体、方块实体、最终光照及宿主遮挡仍需单独完成。
 
 H1 观察实验保持独立可测。宿主修改仍受真实程序版本、模式与引擎阶段证据约束；源码及协议工作不等待无关游戏环境。
 

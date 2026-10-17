@@ -39,6 +39,7 @@ public final class WorldLifecycleTests implements FabricClientGameTest {
     }
 
     private static void position(ClientGameTestContext context, TestSingleplayerContext world) {
+        GameWorld.awaitReady(context, world);
         world.getServer().runCommand("gamemode spectator @a");
         world.getServer().runCommand("tp @a 0.5 79 -4 0 0");
         for (int tick = 0; tick < 200; ++tick) {

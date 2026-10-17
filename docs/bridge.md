@@ -8,6 +8,8 @@
 
 `MinecraftBlocks` reads and conditionally changes loaded positions in an integrated single-player server. Loading, stopping, dedicated or remote/LAN server states reject attachment and invalidate an active session. These Minecraft checks do not identify Dying Light modes. Read, write, attach, detach and change observation belong to the server thread; stream I/O, endpoint cancellation and stream closure use daemon workers.
 
+The readiness getter in pinned Yarn 1.21.4+build.8 is named `isLoading()`, but corresponds to Mojang's `isReady()` and must return true for admission. `GuestAccess` requires ready, single-player, non-dedicated, non-remote and neither stopping nor stopped; a false readiness value rejects admission and queued work. The [mapping and bytecode evidence](validation-20261017.md#correct-integrated-server-readiness) fixes this version-specific meaning. A GameTest wait never substitutes for the production gate.
+
 A position is the dimension identifier plus signed X/Y/Z coordinates. Out-of-height or world-border positions are invalid; missing worlds and unloaded chunks are unavailable. The adapter does not force chunk loading. Block states use complete canonical identifiers and alphabetically ordered properties, such as `minecraft:oak_log[axis=x]`. Unknown identifiers, duplicate or invalid properties and noncanonical defaults are rejected. Replacing either an existing or a target block entity is unsupported in this batch, preserving its data; block-entity support remains a future capability.
 
 ## Collision-shape snapshots

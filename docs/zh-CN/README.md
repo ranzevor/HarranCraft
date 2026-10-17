@@ -16,6 +16,7 @@
 | 标定坐标并绑定受控双相机投影 | [相机投影契约](camera-projection.md) |
 | 验证 D3D11 场景附件并管理只读深度视图 | [D3D11 深度契约](d3d11-depth.md) |
 | 构建 Fabric 客体与运行隔离游戏测试 | [客体本地验证](guest-validation.md) |
+| 核对真实本地 GameTest 结果与就绪修正 | [2026-10-17 验证证据](validation-20261017.md) |
 | 跟踪完整玩法目标 | [路线图](roadmap.md) |
 | 参与贡献 | [贡献指南](contributing.md) |
 | 区分测试证据层级 | [验证模型](../testing.md) |

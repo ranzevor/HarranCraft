@@ -124,6 +124,38 @@ public final class LifecycleTests {
         check(setup.world.writes == 0, "Queued mutation survived mode rejection");
     }
 
+    private static void guestAdmission() {
+        // Bits describe singleplayer, dedicated, remote, ready, stopping and stopped.
+        // Only the private ready combination may process the queued command.
+        for (int flags = 0; flags < 64; ++flags) {
+            boolean allowed = GuestAccess.allowed((flags & 1) != 0, (flags & 2) != 0,
+                    (flags & 4) != 0, (flags & 8) != 0, (flags & 16) != 0, (flags & 32) != 0);
+            check(allowed == (flags == 9), "Guest admission accepted the wrong server state");
+            Setup initial = new Setup(false);
+            initial.link.incoming.add(Frame.control(Frame.HELLO, 0, 0, Frame.NATIVE));
+            initial.session.tick(1, allowed);
+            if (flags == 9) {
+                check(initial.session.isWelcomed(), "Ready private server refused its handshake");
+            } else {
+                initial.closed();
+                check(!initial.session.isWelcomed(), "Refused server completed a handshake");
+            }
+            Setup active = new Setup(true);
+            active.send(command(Frame.GET, 1));
+            active.link.incoming.add(command(Frame.SET, 2));
+            active.session.tick(2, allowed);
+            if (flags == 9) {
+                check(active.session.isOpen() && active.world.writes == 1,
+                        "Ready private server rejected its queued mutation");
+            } else {
+                active.closed();
+                check(active.world.writes == 0, "Disallowed server executed a queued mutation");
+            }
+            initial.session.close();
+            active.session.close();
+        }
+    }
+
     private static void invalidText() {
         for (String state : new String[]{"x".repeat(193), "minecraft:stone\n", "方块"}) {
             try {
@@ -193,9 +225,10 @@ public final class LifecycleTests {
         run("adapter-write-failure", () -> adapterFailure(true));
         run("event-send-failure", LifecycleTests::eventFailure);
         run("mode-transition", LifecycleTests::modeTransition);
+        run("guest-admission", LifecycleTests::guestAdmission);
         run("frame-text-validation", LifecycleTests::invalidText);
         run("independent-pipe-close", LifecycleTests::independentPipeClose);
         if (failures != 0) throw new AssertionError(failures + " lifecycle scenarios failed");
-        System.out.println("bridge-lifecycle: 8 scenarios passed, " + checks + " assertions");
+        System.out.println("bridge-lifecycle: 9 scenarios passed, " + checks + " assertions");
     }
 }

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <future>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -107,7 +108,8 @@ static void interleavings() {
     std::array<int, 9> order{0, 0, 0, 1, 1, 1, 1, 1, 1};
     int permutations = 0;
     do {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         std::size_t mi = 0, ti = 0;
         std::array<std::uint64_t, 2> latest{0, 0};
@@ -146,7 +148,8 @@ static void fragments() {
     const auto model_bytes = render::encode(first);
     const auto pixels = texture::encode(sprite(first));
     for (std::size_t split = 1; split < pixels.size(); ++split) {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         require(coordinator.feed_textures(std::span(pixels).first(split), start),
                 "Texture fragment before model was rejected");
@@ -159,7 +162,8 @@ static void fragments() {
         exact(coordinator, first);
     }
     for (std::size_t split = 1; split < model_bytes.size(); ++split) {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         require(coordinator.feed_models(std::span(model_bytes).first(split), start),
                 "Model fragment was rejected");
@@ -170,7 +174,8 @@ static void fragments() {
                 "Model continuation after textures was rejected");
         exact(coordinator, first);
     }
-    MaterialCoordinator coordinator;
+    const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+    auto& coordinator = *coordinator_storage;
     begin(coordinator);
     require(coordinator.feed_models(std::span(model_bytes).first(9), start)
                 && coordinator.feed_textures(std::span(pixels).first(11), start)
@@ -184,7 +189,8 @@ static void fragments() {
 
 static void withdrawal_and_replacement() {
     for (const bool retire : {false, true}) {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         const auto first = model();
         send_model(coordinator, first);
@@ -206,7 +212,8 @@ static void withdrawal_and_replacement() {
                 "Drained capture was resurrected by a duplicate");
         cleared(coordinator, CoordinationState::rejected);
     }
-    MaterialCoordinator coordinator;
+    const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+    auto& coordinator = *coordinator_storage;
     begin(coordinator);
     const auto first = model();
     send_model(coordinator, first);
@@ -221,7 +228,8 @@ static void withdrawal_and_replacement() {
     exact(coordinator, model(2));
 
     for (const bool early : {false, true}) {
-        MaterialCoordinator revoked;
+        const auto revoked_storage = std::make_unique<MaterialCoordinator>();
+        auto& revoked = *revoked_storage;
         begin(revoked);
         auto record = sprite(first);
         record.kind = texture::Kind::retire;
@@ -241,7 +249,8 @@ static void withdrawal_and_replacement() {
 
 static void missing_and_invalid() {
     for (const bool early : {false, true}) {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         if (!early) send_model(coordinator, model());
         send_sprite(coordinator, model(), 0);
@@ -255,7 +264,8 @@ static void missing_and_invalid() {
         }
         cleared(coordinator, CoordinationState::incomplete);
     }
-    MaterialCoordinator skipped;
+    const auto skipped_storage = std::make_unique<MaterialCoordinator>();
+    auto& skipped = *skipped_storage;
     begin(skipped);
     send_sprite(skipped, model(2), 0);
     send_sprite(skipped, model(2), 1);
@@ -264,7 +274,8 @@ static void missing_and_invalid() {
     exact(skipped, model(2));
 
     for (int field = 0; field < 5; ++field) {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         send_model(coordinator, model());
         auto other = sprite(model());
@@ -280,7 +291,8 @@ static void missing_and_invalid() {
         cleared(coordinator, field == 4 ? CoordinationState::incomplete : CoordinationState::rejected);
     }
     for (const bool early : {false, true}) {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         if (!early) send_model(coordinator, model());
         send_sprite(coordinator, model(), 0);
@@ -289,19 +301,22 @@ static void missing_and_invalid() {
         cleared(coordinator, CoordinationState::rejected);
     }
     for (const bool air : {false, true}) {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         send_sprite(coordinator, model(), air ? 0 : 3);
         require(!coordinator.feed_models(render::encode(model(1, 0, air ? 0 : 2)), start),
                 "Model accepted unexpected quarantined textures");
         cleared(coordinator, CoordinationState::rejected);
     }
-    MaterialCoordinator duplicate;
+    const auto duplicate_storage = std::make_unique<MaterialCoordinator>();
+    auto& duplicate = *duplicate_storage;
     begin(duplicate);
     send_model(duplicate, model());
     require(!duplicate.feed_models(render::encode(model()), start), "Duplicate model was accepted");
     cleared(duplicate, CoordinationState::rejected);
-    MaterialCoordinator gap;
+    const auto gap_storage = std::make_unique<MaterialCoordinator>();
+    auto& gap = *gap_storage;
     begin(gap);
     require(!gap.feed_models(render::encode(model(2)), start), "Model capture gap was accepted");
     cleared(gap, CoordinationState::rejected);
@@ -310,7 +325,8 @@ static void missing_and_invalid() {
 static void termination_and_timeout() {
     for (const Channel channel : {Channel::models, Channel::textures}) {
         for (const bool partial : {false, true}) {
-            MaterialCoordinator coordinator;
+            const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+            auto& coordinator = *coordinator_storage;
             begin(coordinator);
             send_model(coordinator, model());
             send_sprite(coordinator, model(), 0);
@@ -337,12 +353,14 @@ static void termination_and_timeout() {
             coordinator.fail(channel);
             cleared(coordinator, CoordinationState::io_failed);
         }
-        MaterialCoordinator incomplete;
+        const auto incomplete_storage = std::make_unique<MaterialCoordinator>();
+        auto& incomplete = *incomplete_storage;
         begin(incomplete);
         send_sprite(incomplete, model(), 0);
         incomplete.end_of_stream(channel);
         cleared(incomplete, CoordinationState::incomplete);
-        MaterialCoordinator malformed;
+        const auto malformed_storage = std::make_unique<MaterialCoordinator>();
+        auto& malformed = *malformed_storage;
         begin(malformed);
         auto bytes = channel == Channel::models ? render::encode(model())
                                                : texture::encode(sprite(model()));
@@ -353,7 +371,8 @@ static void termination_and_timeout() {
         cleared(malformed, CoordinationState::malformed);
     }
     for (const bool texture_first : {false, true}) {
-        MaterialCoordinator coordinator(100ms);
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>(100ms);
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         if (texture_first) send_sprite(coordinator, model(), 0);
         else send_model(coordinator, model());
@@ -363,7 +382,8 @@ static void termination_and_timeout() {
         require(!coordinator.poll(start + 100ms), "Other captures refreshed an incomplete deadline");
         cleared(coordinator, CoordinationState::timed_out);
     }
-    MaterialCoordinator partial(100ms);
+    const auto partial_storage = std::make_unique<MaterialCoordinator>(100ms);
+    auto& partial = *partial_storage;
     begin(partial);
     const auto bytes = texture::encode(sprite(model()));
     require(partial.feed_textures(std::span(bytes).first(1), start)
@@ -372,7 +392,8 @@ static void termination_and_timeout() {
     require(!partial.feed_textures(std::span(bytes).subspan(11), start + 100ms),
             "Fragment progress refreshed its deadline");
     cleared(partial, CoordinationState::timed_out);
-    MaterialCoordinator reverse;
+    const auto reverse_storage = std::make_unique<MaterialCoordinator>();
+    auto& reverse = *reverse_storage;
     begin(reverse);
     require(!reverse.poll(start - 1ms), "A regressed monotonic clock was accepted");
     cleared(reverse, CoordinationState::rejected);
@@ -380,7 +401,8 @@ static void termination_and_timeout() {
 
 static void capacities_and_ownership() {
     for (const bool textures_only : {false, true}) {
-        MaterialCoordinator coordinator;
+        const auto coordinator_storage = std::make_unique<MaterialCoordinator>();
+        auto& coordinator = *coordinator_storage;
         begin(coordinator);
         for (std::uint64_t i = 1; i <= 16; ++i) {
             if (textures_only) send_sprite(coordinator, model(i), 0);
@@ -393,7 +415,8 @@ static void capacities_and_ownership() {
         require(!accepted, "Pending capture capacity was exceeded");
         cleared(coordinator, CoordinationState::capacity);
     }
-    MaterialCoordinator positions;
+    const auto positions_storage = std::make_unique<MaterialCoordinator>();
+    auto& positions = *positions_storage;
     begin(positions);
     for (std::int32_t i = 0; i < 16; ++i) {
         const auto record = model(static_cast<std::uint64_t>(i + 1), i);
@@ -411,7 +434,8 @@ static void capacities_and_ownership() {
             "Seventeenth model position was admitted");
     cleared(positions, CoordinationState::capacity);
 
-    MaterialCoordinator records;
+    const auto records_storage = std::make_unique<MaterialCoordinator>();
+    auto& records = *records_storage;
     begin(records);
     for (std::int32_t i = 0; i < 15; ++i) {
         const auto record = model(static_cast<std::uint64_t>(i + 1), i, 16);
@@ -425,7 +449,8 @@ static void capacities_and_ownership() {
             "Retained-record budget was exceeded");
     cleared(records, CoordinationState::capacity);
 
-    MaterialCoordinator bytes;
+    const auto bytes_storage = std::make_unique<MaterialCoordinator>();
+    auto& bytes = *bytes_storage;
     begin(bytes);
     bool full = false;
     for (std::int32_t i = 0; i < 16 && !full; ++i) {
@@ -444,7 +469,8 @@ static void capacities_and_ownership() {
     require(full, "Maximum-size material records did not exercise byte admission");
     cleared(bytes, CoordinationState::capacity);
 
-    MaterialCoordinator owner;
+    const auto owner_storage = std::make_unique<MaterialCoordinator>();
+    auto& owner = *owner_storage;
     begin(owner);
     auto foreign = std::async(std::launch::async, [&owner] {
         try { (void)owner.feed_models({}, start); }

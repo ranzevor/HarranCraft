@@ -21,6 +21,7 @@ public final class ClientTests implements FabricClientGameTest {
 
     @Override public void runTest(ClientGameTestContext context) {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+            GameWorld.awaitReady(context, singleplayer);
             singleplayer.getServer().runCommand("gamemode spectator @a");
             singleplayer.getServer().runCommand("tp @a 0.5 79 -4 0 0");
             for (int tick = 0; tick < 200; ++tick) {

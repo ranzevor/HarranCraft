@@ -2,7 +2,7 @@
 
 [简体中文](zh-CN/guest-validation.md) · [Development](development.md) · [Bridge contract](bridge.md)
 
-Run commands from the repository root in an isolated source checkout. Use disposable generated worlds, not a real installation or existing saves. The Fabric sources and production JAR passed an Ubuntu CI build; actual GameTests and live game integration remain unrun. Successful compilation and protocol tests do not replace those acceptance results.
+Run commands from the repository root in an isolated source checkout. Use disposable generated worlds, not a real installation or existing saves. Ordinary Ubuntu CI compiles Fabric and GameTest sources and verifies the production JAR without executing Minecraft. The [2026-10-17 local evidence](validation-20261017.md) records three successful real server GameTests and a client run that failed at its first bridge attachment. Complete client acceptance and live Dying Light integration remain outstanding.
 
 ## Toolchain
 
@@ -99,6 +99,8 @@ Project properties use `-Pname=value`; accepted names are `runMinecraftTests`, `
 Tool probes retain their stdout/stderr references, exit code, elapsed time, cleanup outcome and original failure details under `tools`. Failed probes, missing prerequisites, timeouts and interruptions keep their distinct outcomes; a successful process with an unrecognized version is a failed probe check. Source-identity timeouts remain `timed_out`. Interrupted or failed preflight does not leave a `running` state in the final report.
 
 ## World lifecycle and isolated LAN acceptance
+
+New, reopened and replacement client worlds share a readiness check before commands or attachment. The GameTest thread advances at most 200 ticks; each state query runs on the server thread and rejects disallowed or stopping modes immediately. In pinned Yarn 1.21.4, `MinecraftServer.isLoading()` is Mojang's `isReady()` and must be true. Attachment and each production world operation still recheck the private-server gate. The pure-Java lifecycle suite covers all 64 admission-flag combinations, initial handshakes and queued-mutation revocation; it cannot replace execution of the actual Minecraft adapter.
 
 Client execution also runs `WorldLifecycleTests` in disposable worlds. It repeats native block round trips on three fresh connections, rejects attachment from the game-test thread without consuming the offered transport, and verifies that refusing to replace a chest preserves its block-entity identity and seven-diamond inventory fixture. An observer remains attached while a world closes: the registered lifecycle callback, not a test-side detach, must retire the connection. The generated save is reopened and its gold block verified before further mutation; both reopened and replacement worlds must reject a prior epoch and accept a new block round trip. No existing save is opened.
 

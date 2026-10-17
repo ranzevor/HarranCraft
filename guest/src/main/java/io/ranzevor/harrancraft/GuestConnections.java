@@ -2,6 +2,7 @@ package io.ranzevor.harrancraft;
 
 import io.ranzevor.harrancraft.bridge.Frame;
 import io.ranzevor.harrancraft.bridge.GeometryPipe;
+import io.ranzevor.harrancraft.bridge.GuestAccess;
 import io.ranzevor.harrancraft.bridge.PipeLink;
 import io.ranzevor.harrancraft.bridge.Session;
 import java.io.InputStream;
@@ -25,8 +26,9 @@ public final class GuestConnections {
     private GuestConnections() {}
 
     public static boolean allowed(MinecraftServer server) {
-        return server.isSingleplayer() && !server.isDedicated() && !server.isRemote()
-                && !server.isLoading() && !server.isStopping() && !server.isStopped();
+        // Yarn 1.21.4 names Mojang's isReady() getter isLoading(); true means ready.
+        return GuestAccess.allowed(server.isSingleplayer(), server.isDedicated(), server.isRemote(),
+                server.isLoading(), server.isStopping(), server.isStopped());
     }
 
     public static Session attach(MinecraftServer server, InputStream input, OutputStream output) {

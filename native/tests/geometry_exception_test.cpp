@@ -1,5 +1,6 @@
 #include <harrancraft/capture_projection.hpp>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -9,6 +10,7 @@
 #include <numbers>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -20,26 +22,94 @@ namespace {
 
 class InjectedAllocationFailure final : public std::bad_alloc {
 public:
+    explicit InjectedAllocationFailure(std::size_t bytes) noexcept : bytes_(bytes) {}
     const char* what() const noexcept override { return "Controlled allocation failure"; }
+    std::size_t bytes() const noexcept { return bytes_; }
+private:
+    std::size_t bytes_;
 };
 
 constexpr auto disabled_failure = std::numeric_limits<std::size_t>::max();
+thread_local std::size_t payload_allocation_bytes = 0;
 thread_local std::size_t allocations_until_failure = disabled_failure;
 thread_local std::size_t injected_failures = 0;
 thread_local bool counting_allocations = false;
 thread_local std::size_t allocation_count = 0;
 
-void* allocate(std::size_t size) {
-    if (counting_allocations) ++allocation_count;
-    if (allocations_until_failure != disabled_failure) {
-        if (allocations_until_failure == 0) {
-            allocations_until_failure = disabled_failure;
-            ++injected_failures;
-            throw InjectedAllocationFailure{};
-        }
-        --allocations_until_failure;
+class AllocationTrace;
+thread_local AllocationTrace* allocation_trace = nullptr;
+
+class AllocationTrace {
+public:
+    AllocationTrace() {
+        if (allocation_trace) throw std::logic_error("Nested allocation trace");
+        allocation_trace = this;
     }
-    if (void* result = std::malloc(size == 0 ? 1 : size)) return result;
+    ~AllocationTrace() {
+        allocation_trace = nullptr;
+        requests_.fill(Request{});
+        count_ = 0;
+    }
+    AllocationTrace(const AllocationTrace&) = delete;
+    AllocationTrace& operator=(const AllocationTrace&) = delete;
+
+    void record(void* pointer, std::size_t bytes) noexcept {
+        if (count_ == requests_.size()) {
+            overflow_ = true;
+            return;
+        }
+        requests_[count_++] = {reinterpret_cast<std::uintptr_t>(pointer), bytes};
+    }
+
+    bool overflow() const noexcept { return overflow_; }
+
+    bool contains_size(std::size_t bytes) const noexcept {
+        for (std::size_t i = 0; i < count_; ++i) {
+            if (requests_[i].bytes == bytes) return true;
+        }
+        return false;
+    }
+
+    std::optional<std::size_t> storage_for(const void* pointer, std::size_t bytes) const noexcept {
+        if (overflow_) return std::nullopt;
+        const auto address = reinterpret_cast<std::uintptr_t>(pointer);
+        std::optional<std::size_t> result;
+        for (std::size_t i = 0; i < count_; ++i) {
+            const auto request = requests_[i];
+            if (address < request.address) continue;
+            const auto offset = address - request.address;
+            if (offset > request.bytes || bytes > request.bytes - static_cast<std::size_t>(offset)) {
+                continue;
+            }
+            if (result) return std::nullopt;
+            result = request.bytes;
+        }
+        return result;
+    }
+
+private:
+    struct Request { std::uintptr_t address = 0; std::size_t bytes = 0; };
+    std::array<Request, 64> requests_{};
+    std::size_t count_ = 0;
+    bool overflow_ = false;
+};
+
+void* allocate(std::size_t size) {
+    if (payload_allocation_bytes != 0 && size == payload_allocation_bytes) {
+        if (counting_allocations) ++allocation_count;
+        if (allocations_until_failure != disabled_failure) {
+            if (allocations_until_failure == 0) {
+                allocations_until_failure = disabled_failure;
+                ++injected_failures;
+                throw InjectedAllocationFailure{size};
+            }
+            --allocations_until_failure;
+        }
+    }
+    if (void* result = std::malloc(size == 0 ? 1 : size)) {
+        if (allocation_trace) allocation_trace->record(result, size);
+        return result;
+    }
     throw std::bad_alloc{};
 }
 
@@ -203,6 +273,64 @@ static ProjectionKey activated(Fixture& fixture, std::uint64_t serial) {
     return std::move(*key);
 }
 
+template<class T>
+static void check_bookkeeping_allocations(T prototype, std::size_t payload_bytes) {
+    AllocationTrace trace;
+    {
+        T empty;
+        T moved_empty(std::move(empty));
+        T moved_payload(std::move(prototype));
+        std::optional<T> result;
+        result = std::move(moved_payload);
+        moved_empty = std::move(*result);
+    }
+    require(!trace.overflow(), "Container bookkeeping allocation trace exceeded its bound");
+    require(!trace.contains_size(payload_bytes),
+            "Canonical-state allocation size collides with container bookkeeping");
+}
+
+static void calibrate_payload_allocations() {
+    const std::string source(state);
+    std::size_t payload_bytes = 0;
+    {
+        AllocationTrace trace;
+        const std::string copy(source);
+        const auto request = trace.storage_for(copy.data(), copy.size() + 1);
+        require(request.has_value(), "Canonical-state storage did not identify one allocation request");
+        payload_bytes = *request;
+    }
+
+    // Observe this library's empty and populated moves before enabling failures.
+    // Debug iterator proxies may allocate inside otherwise noexcept constructors.
+    Fixture fixture;
+    auto key = activated(fixture, 1);
+    auto material = fixture.materials.find({dimension, 0, 0, 3}, now);
+    auto shape = fixture.shapes.last_record();
+    auto candidate = fixture.shapes.find({dimension, 0, 0, 3});
+    auto projected = fixture.projector.snapshot(key, fixture.evidence, now);
+    require(material && !material->sprites.empty() && shape && candidate && projected,
+            "Allocation calibration did not obtain the controlled payload types");
+    auto record = material->model;
+    auto pixels = material->sprites.begin()->second;
+    check_bookkeeping_allocations(std::move(record), payload_bytes);
+    check_bookkeeping_allocations(std::move(pixels), payload_bytes);
+    check_bookkeeping_allocations(std::move(*shape), payload_bytes);
+    check_bookkeeping_allocations(std::move(*candidate), payload_bytes);
+    check_bookkeeping_allocations(std::move(*material), payload_bytes);
+    check_bookkeeping_allocations(std::move(key), payload_bytes);
+    check_bookkeeping_allocations(std::move(*projected), payload_bytes);
+    payload_allocation_bytes = payload_bytes;
+    std::cout << "geometry-exception: canonical-state storage request="
+              << payload_bytes << " bytes, bookkeeping requests excluded" << std::endl;
+}
+
+static void report_injected_payload(const char* operation, std::size_t bytes) {
+    require(bytes == payload_allocation_bytes,
+            "Injected exception did not identify the calibrated state storage request");
+    std::cout << "geometry-exception: injected bad_alloc at " << operation
+              << ", state storage request=" << bytes << " bytes" << std::endl;
+}
+
 static void rejected_geometry_retires_projection() {
     Fixture fixture;
     const auto old_key = activated(fixture, 1);
@@ -211,13 +339,18 @@ static void rejected_geometry_retires_projection() {
     const auto bytes = geometry::encode(replacement);
     const auto failures_before = injected_failures;
     bool propagated = false;
+    std::size_t failed_bytes = 0;
     {
         FailAllocation fault;
         try { (void)fixture.shapes.feed(bytes); }
-        catch (const InjectedAllocationFailure&) { propagated = true; }
+        catch (const InjectedAllocationFailure& error) {
+            propagated = true;
+            failed_bytes = error.bytes();
+        }
     }
     require(propagated && injected_failures == failures_before + 1,
             "Geometry decoding did not preserve the injected bad_alloc type");
+    report_injected_payload("geometry decode state", failed_bytes);
     require(fixture.shapes.state() == geometry::ReceiverState::rejected
             && fixture.shapes.epoch() == 0, "Allocation failure left geometry active");
     require(!fixture.shapes.last_record() && fixture.shapes.staged_positions() == 0
@@ -258,18 +391,24 @@ static void failed_result_copy(bool full_snapshot) {
     }
     require(live && source_allocations != 0, "Source-copy allocation baseline was not observed");
     // The next call validates unchanged sources through the same poll path.
-    // Failing its following allocation targets the owned result copy, not polling.
+    // Its following state-buffer request belongs to the owned result copy.
     const auto failures_before = injected_failures;
     bool propagated = false;
+    std::size_t failed_bytes = 0;
     {
         FailAllocation fault(source_allocations);
         try {
             if (full_snapshot) (void)fixture.projector.snapshot(old_key, fixture.evidence, now);
             else (void)fixture.projector.current_key(fixture.evidence, now);
-        } catch (const InjectedAllocationFailure&) { propagated = true; }
+        } catch (const InjectedAllocationFailure& error) {
+            propagated = true;
+            failed_bytes = error.bytes();
+        }
     }
     require(propagated && injected_failures == failures_before + 1,
             "Result-copy failure did not preserve the injected bad_alloc type");
+    report_injected_payload(full_snapshot ? "snapshot state copy" : "current-key state copy",
+                            failed_bytes);
     require(fixture.projector.retained_points() == 0
             && !fixture.projector.current_key(fixture.evidence, now)
             && !fixture.projector.snapshot(old_key, fixture.evidence, now),
@@ -304,15 +443,20 @@ static void failed_capture_key_copy_does_not_commit() {
     fixture.advance();
     const auto failures_before = injected_failures;
     bool propagated = false;
+    std::size_t failed_bytes = 0;
     {
-        // All allocations in this unchanged capture path precede the move-only
-        // commit. Its final allocation copies the returned key's bounded state.
+        // The final counted state-buffer request copies the returned key.
+        // Calibration excludes bookkeeping allocations in the following moves.
         FailAllocation fault(capture_allocations - 1);
         try { (void)fixture.capture(); }
-        catch (const InjectedAllocationFailure&) { propagated = true; }
+        catch (const InjectedAllocationFailure& error) {
+            propagated = true;
+            failed_bytes = error.bytes();
+        }
     }
     require(propagated && injected_failures == failures_before + 1,
             "Capture result failure did not preserve the injected bad_alloc type");
+    report_injected_payload("capture returned-key state copy", failed_bytes);
     require(fixture.projector.retained_points() == 0
             && !fixture.projector.snapshot(old_key, fixture.evidence, now),
             "Failed capture result retained partially committed ownership");
@@ -325,6 +469,7 @@ static void failed_capture_key_copy_does_not_commit() {
 
 int main() {
     try {
+        calibrate_payload_allocations();
         rejected_geometry_retires_projection();
         failed_result_copy(true);
         failed_result_copy(false);
