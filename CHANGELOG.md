@@ -4,6 +4,7 @@
 
 ### Added
 
+- Windows D3D11 depth attachment with composite build/camera gates, bounded color/depth source references, exact current-binding validation and read-only depth/stencil views; registered WARP occlusion, unchanged-depth and resource-retirement regressions.
 - Versioned similarity calibration, rigid camera/viewport contracts, both handedness and depth conventions with reverse Z, and bounded dual-camera projections tied to live material, geometry and host capture identities; analytic and receiver-integrated native regressions.
 - Native cross-channel material coordination with exact capture identities, bounded out-of-order assembly, complete-manifest activation, superseded-capture draining, absolute deadlines and independent Java/C++ OS-pipe regressions.
 - Bounded multi-sprite material batch publisher, client-resource reload cancellation, and native CPU texture cache with complete-manifest gates, incremental source-pixel reception and Java/C++ process tests.
@@ -55,6 +56,7 @@ Fabric compilation includes production and GameTest sources, Mod JAR remapping a
 
 ### 未发布变更
 
+- 新增 Windows D3D11 深度附件：组合构建／相机门禁、有界颜色／深度源引用、精确当前绑定校验与只读深度／模板视图，并注册 WARP 遮挡、深度不变及资源释放回归。
 - 新增版本化相似变换标定、刚体相机／视口契约、左右手及两种深度范围与反向 Z，并将有界双相机投影绑定到有效材质、几何及宿主采集身份，纳入解析值和实际接收器联动的原生回归。
 - Windows 原生持续写入测试采用同步 Win32 写入及确切的管道已结束／正在关闭状态确认接收端关闭，不把通用 CRT 错误或其他 Win32 错误视作关闭证据。
 - 原生管道故障测试在结束自有进程前确认输出关闭与有界诊断流完成，保留取消竞态中的原始证据异常及严格资源回收检查。

@@ -28,6 +28,7 @@ The repository provides **`hc-inspect`**, a read-only development tool for ident
 | Render model stream | Java/C++ record v1, bounded client-side async publisher, native incremental receiver and candidate model lifetime tests; no Dying Light renderer |
 | Loaded sprite materials | Client NativeImage pixels, bounded ARGB records and async dual-stream batches; native five-part identity association tolerates cross-channel reordering and activates only complete materials; no GPU atlas or host texture upload |
 | H1 host observation core | C++20 composite EXE/DLL build identity, session and camera contracts; isolated CTest, no game integration |
+| Camera and depth preparation | Versioned dual-camera calibration and capture ownership; Windows D3D11 read-only depth-view preparation with bounded source references and a registered WARP regression; no live game camera/depth association |
 | Dying Light host adapter | Not implemented |
 | In-game occlusion, native block collision, damage and TNT | Not implemented or game-tested |
 | Playable distribution or installer | Not available |
@@ -92,7 +93,7 @@ The [architecture](docs/architecture.md) records ownership, recovery and protoco
 | `guest/` | Fabric endpoint, protocol core and isolated GameTest sources |
 | `include/harrancraft/wire.hpp` | Native wire-layout authority |
 | `include/harrancraft/host_probe.h` | Windows host identity C ABI |
-| `native/host/` | Read-only Windows native host sources |
+| `native/host/` | Windows identity probe and controlled D3D11 depth attachment sources |
 | `native/tests/` | C++ contract tests and private-pipe test peer |
 | `schemas/` | Machine-readable report contract |
 | `tests/` | Generated input fixtures and regression tests |

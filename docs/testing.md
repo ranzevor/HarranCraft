@@ -21,6 +21,12 @@ The native `host-observation` CTest exercises the read-only [H1 observation core
 
 The Fabric `MinecraftCollisionShapes` source collects Minecraft's actual block collision geometry for subscribed, loaded positions under a matching guest epoch. Its GameTests cover full-block, slab, air and an authorized client-world snapshot, including refusal after disconnect. CI compiles these GameTest classes but does not execute Minecraft, establish the renderer's mesh geometry or verify Dying Light native physics.
 
+## D3D11 depth attachment checks
+
+Windows registers `d3d11-depth` in the existing native CTest stage, linked to the production depth attachment library and the system D3D11/D3DCompiler APIs. It creates a real WARP software device with controlled color/depth resources and P2 projection inputs. Pixel readback distinguishes an occluded far primitive, visible far pixels outside the occluder and a visible near primitive for normal and reverse Z; depth bytes before and after the read-only draw are compared. Source references, stale capture/configuration, current bindings, viewport, budgets and explicit retirement have separate cases. Private COM data sentinels test owned-view release and distinguish caller/context references from attachment references.
+
+No game process or game asset participates. CPU readback, shader compilation, clears, bindings and flushes belong only to the test executable. Production attachment preparation observes metadata and creates a read-only view; it never draws, maps or changes pipeline bindings. A WARP pass does not prove Dying Light depth/pass correspondence, GPU-driver recovery or a safe game callback. [Supported layouts and outstanding acceptance](d3d11-depth.md)
+
 ## Geometry wire checks
 
 Pure Java `GeometryPipeTests` covers async real byte writes, bounded enqueue, generation/revision enforcement, stream failure, cancellation and complete worker retirement. The guest session compiles optional geometry attachment and GET/block-change publication against Fabric, but source compilation does not establish loaded Mod or real-world behavior.

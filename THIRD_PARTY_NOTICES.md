@@ -8,9 +8,15 @@ Development tools are installed separately through [requirements-dev.txt](requir
 
 [GModLight](https://github.com/GooseMcGee/DyingLight-GMod) is a host-interface research reference under its own MIT license. No GModLight, MinHook, ASI-loader, GMod SDK or GMod guest code is included in this version. Any later source reuse must retain the component's license and copyright and record its fixed revision here.
 
+## Windows graphics interfaces / Windows 图形接口
+
+The Windows depth attachment uses the system D3D11 API and externally supplied development headers/import libraries. Its controlled WARP test additionally uses the system D3DCompiler API with project-authored shaders. No Windows runtime, SDK, driver, shader compiler, game asset or reference-project shader is redistributed. [D3D11 API documentation](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/) and [WARP documentation](https://learn.microsoft.com/en-us/windows/win32/direct3darticles/directx-warp) define those external interfaces.
+
+Windows 深度附件使用系统 D3D11 API 及外部开发头文件／导入库；受控 WARP 测试另通过系统 D3DCompiler 编译项目自编着色器，不分发 Windows 运行时、SDK、驱动、着色器编译器、游戏素材或参考项目着色器。
+
 ## Fabric guest dependencies / Fabric 客体依赖
 
-These components are resolved separately by the guest build, not vendored into this repository. Versions are configured values pending complete Fabric resolution. 这些组件由客体构建独立解析，不随仓库分发；表中版本为尚待完整解析验证的配置值。
+These components are resolved separately by the guest build, not vendored into this repository. The table records configured versions; actual build and game-execution evidence is tracked separately in [compatibility](docs/compatibility.md). 这些组件由客体构建独立解析，不随仓库分发；表中为固定配置版本，实际构建与游戏执行证据另见[兼容范围](docs/zh-CN/compatibility.md)。
 
 | Component / 组件 | Configured version / 配置版本 | Source and license / 来源与许可 |
 | --- | --- | --- |

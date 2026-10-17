@@ -28,6 +28,7 @@ HarranCraft 是将真实 Minecraft 运行时与《消逝的光芒 1》融合的�
 | 渲染模型数据流 | Java／C++ 版本 1、有界客户端异步发布、原生分片接收及候选模型生命周期验证；仍无消光渲染端点 |
 | 源精灵材质批次 | 客户端 NativeImage 像素、有界 ARGB 记录及双流异步批次；原生端按五项身份关联并容忍跨通道乱序，仅完整材质可用；尚无最终显存图集或消光纹理上传 |
 | H1 宿主观察核心 | C++20 EXE／DLL 组合构建身份、会话与相机帧契约及隔离 CTest；未接入游戏 |
+| 相机与深度准备 | 版本化双相机标定及采集归属；Windows D3D11 只读深度视图准备、有界源引用及已注册 WARP 回归；尚未关联真实游戏相机与深度 |
 | 消光宿主适配器 | 尚未实现 |
 | 游戏内遮挡、原生方块碰撞、伤害与 TNT | 尚未实现或实机验证 |
 | 可玩发行包或安装器 | 尚未提供 |
@@ -92,7 +93,7 @@ Fabric 配置版本及明确的本地构建／GameTest 命令见[本地验证](d
 | `guest/` | Fabric 端点、协议核心及隔离 GameTest 源码 |
 | `include/harrancraft/wire.hpp` | 原生 wire 布局权威 |
 | `include/harrancraft/host_probe.h` | Windows 宿主身份 C ABI |
-| `native/host/` | Windows 只读宿主源码 |
+| `native/host/` | Windows 身份探测与受控 D3D11 深度附件源码 |
 | `native/tests/` | C++ 契约测试与私有管道测试进程 |
 | `schemas/` | 机器可读报告契约 |
 | `tests/` | 动态生成的输入样本及回归测试 |

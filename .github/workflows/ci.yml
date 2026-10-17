@@ -106,11 +106,20 @@ jobs:
           $env:JAVA_HOME = $jdk
           $env:Path = "$(Join-Path $jdk 'bin');$env:Path"
           python tools/test_bridge.py --hc-timeout 900
-      - name: Inspect Windows bridge failure
-        if: failure()
+      - name: Inspect Windows bridge result
+        if: always()
         shell: pwsh
         run: |
-          Get-ChildItem 'reports/validation' -Recurse -Filter 'result.json' | ForEach-Object {
+          if (-not (Test-Path -LiteralPath 'reports/validation' -PathType Container)) {
+            Write-Output 'Windows bridge validation report unavailable'
+            exit 1
+          }
+          $reports = @(Get-ChildItem 'reports/validation' -Recurse -Filter 'result.json' -ErrorAction Stop)
+          if ($reports.Count -eq 0) {
+            Write-Output 'Windows bridge validation report unavailable'
+            exit 1
+          }
+          $reports | ForEach-Object {
             $data = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
             Write-Output ("status={0} reason={1} failed_stage={2}" -f $data.status, $data.reason, $data.failed_stage)
             foreach ($stage in $data.stages) {
@@ -126,7 +135,7 @@ jobs:
                   Write-Output ("remaining_processes=" + ($stage.remaining_processes -join ','))
                 }
               }
-              if ($stage.status -ne 'passed') {
+              if ($stage.status -ne 'passed' -or $stage.name -eq 'native-tests') {
                 foreach ($stream in @('stdout', 'stderr')) {
                   $name = $stage.$stream
                   if (-not $name) { continue }
@@ -138,6 +147,10 @@ jobs:
                 }
               }
             }
+          }
+          $nativeLog = 'build/bridge/native/Testing/Temporary/LastTest.log'
+          if (Test-Path -LiteralPath $nativeLog) {
+            Get-Content -LiteralPath $nativeLog -Tail 60
           }
 
   bridge-msvc:
@@ -183,19 +196,31 @@ jobs:
           set "PATH=%JAVA_HOME%\bin;%PATH%"
           python tools/test_bridge.py --hc-timeout 900
           if errorlevel 1 exit /b 1
-      - name: Inspect MSVC bridge failure
-        if: failure()
+      - name: Inspect MSVC bridge result
+        if: always()
         shell: pwsh
         run: |
-          Get-ChildItem reports/validation -Recurse -Filter result.json -ErrorAction SilentlyContinue | ForEach-Object {
+          if (-not (Test-Path -LiteralPath 'reports/validation' -PathType Container)) {
+            Write-Output 'MSVC bridge validation report unavailable'
+            exit 1
+          }
+          $reports = @(Get-ChildItem 'reports/validation' -Recurse -Filter 'result.json' -ErrorAction Stop)
+          if ($reports.Count -eq 0) {
+            Write-Output 'MSVC bridge validation report unavailable'
+            exit 1
+          }
+          $reports | ForEach-Object {
             $report = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
             Write-Output ("status={0} reason={1} failed_stage={2}" -f $report.status, $report.reason, $report.failed_stage)
             foreach ($stage in $report.stages) {
               Write-Output ("stage={0} status={1} exit={2} reason={3} cleanup={4}" -f $stage.name, $stage.status, $stage.exit_code, $stage.reason, $stage.cleanup)
+              if ($stage.status -ne 'passed') {
+                Write-Output ("descendants_terminated={0} error_type={1} cleanup_error_type={2} elapsed_seconds={3}" -f $stage.descendants_terminated, $stage.error_type, $stage.cleanup_error_type, $stage.elapsed_seconds)
+              }
               if ($stage.remaining_processes) {
                 Write-Output ("remaining_processes=" + ($stage.remaining_processes -join ','))
               }
-              if ($stage.status -ne 'passed') {
+              if ($stage.status -ne 'passed' -or $stage.name -eq 'native-tests') {
                 foreach ($stream in @('stdout', 'stderr')) {
                   $name = $stage.$stream
                   if (-not $name) { continue }
@@ -207,6 +232,10 @@ jobs:
                 }
               }
             }
+          }
+          $nativeLog = 'build/bridge/native/Testing/Temporary/LastTest.log'
+          if (Test-Path -LiteralPath $nativeLog) {
+            Get-Content -LiteralPath $nativeLog -Tail 60
           }
 
   fabric-build:
