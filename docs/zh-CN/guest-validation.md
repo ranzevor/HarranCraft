@@ -21,7 +21,7 @@ python tools/test_bridge.py
 
 桥接命令构建 C++ 测试、编译无第三方依赖的 Java 协议核心、执行核心和生命周期回归、比对完整跨语言参考帧，并启动真实 Java／C++ 进程访问受控世界；还会运行 `hc-pipe-peer` 故障场景并确认工作线程及进程实际结束。Linux 通过 `/proc/self/fd` 测量文件描述符数量，不支持时单独报告该测量未提供。命令不会启动 Minecraft。PR 的 CI 分别在 Ubuntu（JDK 21／GCC 14）和 Windows Server 2025（JDK 21／MinGW x64 GCC／Ninja）执行真实 Java／C++ 进程测试，每个平台保留独立结果。Windows 作业明确选用原生 MinGW 编译器，MSVC 工具链仍须单独验收。这些作业均不解析 Fabric 依赖、不启动 Minecraft；真实游戏验收仍须独立完成。
 
-正常的原生管道故障场景要求诊断流明确结束并收到 EOF 后，才强制结束自有对端。输入饱和场景核实仍在写入的对端实际观察到输出管道关闭。Windows 使用官方规定的 [`WriteFile`／`ERROR_BROKEN_PIPE` 结果](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-writefile#pipes)，POSIX 要求 `EPIPE`；通用 CRT 错误不能满足关闭握手。诊断解析有明确容量限制；即使进程已退出，意外错误也保留原始原因，证据失败不免除子进程与工作线程回收检查。否定场景检查诊断关闭失败的退出状态，并通过暂缓投递已实际观察到的 EOF 验证三秒取消超时。主动断开的缓冲输出可以保留该自有关闭操作产生的确切异常，其余清理错误仍须判定失败。该握手仅属于受控测试对端，生产管道调用方仍采用异步取消。
+正常的原生管道故障场景要求诊断流明确结束并收到 EOF 后，才强制结束自有对端。输入饱和场景核实仍在写入的对端实际观察到输出管道关闭。Windows 使用同步 [`WriteFile`](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-writefile#pipes)，只认可官方定义的 [`ERROR_BROKEN_PIPE`（109，管道已结束）或 `ERROR_NO_DATA`（232，管道正在关闭）](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-)；POSIX 要求 `EPIPE`。通用 CRT 错误及其他 Win32 错误不能满足关闭握手。诊断解析有明确容量限制；即使进程已退出，意外错误也保留原始原因，证据失败不免除子进程与工作线程回收检查。否定场景检查诊断关闭失败的退出状态，并通过暂缓投递已实际观察到的 EOF 验证三秒取消超时。主动断开的缓冲输出可以保留该自有关闭操作产生的确切异常，其余清理错误仍须判定失败。该握手仅属于受控测试对端，生产管道调用方仍采用异步取消。
 
 `python tools/test_bridge.py` 还包含独立几何记录、异步管道故障／回收、原生有界分片接收及 Java／C++ 跨进程验证；协议见[几何传输说明](geometry.md)，不会启动游戏、向消光传输或执行 GameTest。
 

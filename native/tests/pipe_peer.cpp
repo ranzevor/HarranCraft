@@ -76,7 +76,7 @@ static void flood(const Bytes& bytes) {
         const BOOL succeeded = WriteFile(output, bytes.data(), requested, &written, nullptr);
         const DWORD error = GetLastError();
         if (!succeeded) {
-            if (error == ERROR_BROKEN_PIPE) break;
+            if (error == ERROR_BROKEN_PIPE || error == ERROR_NO_DATA) break;
             throw std::runtime_error("Flood WriteFile failed (win32=" + std::to_string(error) + ")");
         }
         if (written != requested)

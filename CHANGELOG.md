@@ -32,7 +32,7 @@
 
 ### Changed
 
-- Windows native flood tests use synchronous Win32 writes and exact broken-pipe errors to acknowledge receiver closure without accepting generic CRT errors.
+- Windows native flood tests use synchronous Win32 writes and the exact ended/closing pipe statuses to acknowledge receiver closure without accepting generic CRT errors or unrelated Win32 failures.
 - Native pipe fault tests acknowledge output closure and complete bounded diagnostics before owned-process termination, preserving original evidence failures and strict cleanup checks across cancellation races.
 - Material publishers immediately invalidate both transports and unregister on either asynchronous output failure, with one-time cancellation, preserved cleanup errors and silent-owner/concurrent-failure regressions.
 - Validation preserves probe timeout/interruption and diagnostic outcomes, requires completion of requested Gradle tasks even after exit code zero, rejects ambiguous invocation options and fixes game-test opt-ins per invocation.
@@ -48,11 +48,13 @@ Fabric compilation includes production and GameTest sources, Mod JAR remapping a
 
 [CI #39018668887](https://github.com/ranzevor/HarranCraft/actions/runs/39018668887) at `f1a50589b8ad783d15e213261d8175f25e23c0a7` retained the precise MinGW failure: the native flood's CRT flush returned `errno=22`, with missing terminal evidence and native exit 1 also reported. Both Python jobs, Ubuntu bridge validation and Fabric compilation passed; MSVC retained the same configure-stage blocker. This evidence identifies that run's CRT failure without retroactively assigning a cause to the earlier run's missing exception.
 
+[CI #39019117099](https://github.com/ranzevor/HarranCraft/actions/runs/39019117099) at `759374c8b05ca379bf01108cc8459b5f1564b7f5` recorded `WriteFile` error 232 in the same MinGW input-saturation stage. This is the documented pipe-closing status and is now recognized alongside ended-pipe status 109. The run passed the same four jobs; MinGW observation tests and subsequent MSVC stages remained unrun.
+
 ## 简体中文
 
 ### 未发布变更
 
-- Windows 原生持续写入测试采用同步 Win32 写入及确切的断管错误确认接收端关闭，不把通用 CRT 错误视作关闭证据。
+- Windows 原生持续写入测试采用同步 Win32 写入及确切的管道已结束／正在关闭状态确认接收端关闭，不把通用 CRT 错误或其他 Win32 错误视作关闭证据。
 - 原生管道故障测试在结束自有进程前确认输出关闭与有界诊断流完成，保留取消竞态中的原始证据异常及严格资源回收检查。
 - 新增原生跨通道材质协调：精确采集身份、有界乱序组装、完整清单激活、已替换采集的在途校验、绝对期限及独立 Java／C++ OS 管道回归。
 - 材质发布器在任一异步输出失败时立即取消双方传输并注销，保留单次取消、清理异常及所属线程静默／并发故障回归。
@@ -86,3 +88,5 @@ Fabric compilation includes production and GameTest sources, Mod JAR remapping a
 Fabric 编译覆盖生产与 GameTest 源码、Mod JAR 重映射及生产 JAR 校验。Minecraft GameTest、实际 Mod/Mixin 装载、Windows Fabric 构建及 MSVC 专项验收仍未完成。当前不包含消光宿主适配器或可玩发行版。
 
 [CI #39018668887](https://github.com/ranzevor/HarranCraft/actions/runs/39018668887) 对应 `f1a50589b8ad783d15e213261d8175f25e23c0a7`，保留了确切的 MinGW 失败原因：原生持续写入的 CRT flush 返回 `errno=22`，同时报告缺少诊断终止记录及原生退出码 1。两个 Python 作业、Ubuntu 桥接验证和 Fabric 编译通过；MSVC 仍在配置阶段受阻。该证据确定本轮 CRT 失败，不反推此前未保留原始异常的作业一定具有相同原因。
+
+[CI #39019117099](https://github.com/ranzevor/HarranCraft/actions/runs/39019117099) 对应 `759374c8b05ca379bf01108cc8459b5f1564b7f5`，在同一 MinGW 输入饱和阶段记录了 `WriteFile` 错误 232。该错误是官方定义的管道正在关闭状态，现与已结束状态 109 一并识别。本轮仍为相同四项作业通过；MinGW 观察测试及后续 MSVC 阶段未执行。
