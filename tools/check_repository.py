@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import re
 import sys
 import tomllib
+from collections.abc import Iterator
 from pathlib import Path
 from string import Formatter
 from urllib.parse import unquote, urlsplit
@@ -13,7 +15,20 @@ import jsonschema
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-IGNORED = {".git", ".venv", "venv", "build", "dist", "out", "reports", "__pycache__", ".ruff_cache"}
+IGNORED = {
+    ".git",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "out",
+    "reports",
+    "__pycache__",
+    ".ruff_cache",
+    ".pytest_cache",
+    ".gradle",
+}
+RUNTIME_PATHS = {("guest", name) for name in ("run", "runClientGameTest", "runGameTest")}
 REQUIRED = {
     "README.md",
     "README.zh-CN.md",
@@ -42,7 +57,24 @@ REQUIRED = {
     "docs/README.md",
     "docs/zh-CN/README.md",
 }
-TEXT_SUFFIXES = {".py", ".md", ".json", ".toml", ".yml", ".yaml", ".txt", ".in", ".typed"}
+TEXT_SUFFIXES = {
+    ".py",
+    ".md",
+    ".json",
+    ".toml",
+    ".yml",
+    ".yaml",
+    ".txt",
+    ".in",
+    ".typed",
+    ".java",
+    ".cpp",
+    ".hpp",
+    ".h",
+    ".gradle",
+    ".properties",
+    ".cmake",
+}
 BINARY_SUFFIXES = {
     ".exe",
     ".dll",
@@ -55,6 +87,10 @@ BINARY_SUFFIXES = {
     ".whl",
     ".jar",
     ".zip",
+    ".class",
+    ".o",
+    ".so",
+    ".dylib",
 }
 LINK = re.compile(r"!?\[[^\]\n]*\]\(([^)\n]+)\)")
 REFERENCE = re.compile(r"(?m)^\[([^\]]+)\]:\s*(\S+)")
@@ -188,32 +224,60 @@ def check_issue_form(data: dict) -> None:
             raise ValueError("missing issue form choices")
 
 
+def source_files(root: Path) -> Iterator[Path]:
+    def failed(error: OSError) -> None:
+        raise ValueError("Cannot enumerate repository files") from error
+
+    for directory, directories, filenames in os.walk(root, onerror=failed):
+        parent = Path(directory)
+        relative = parent.relative_to(root)
+        directories[:] = [
+            name
+            for name in directories
+            if name not in IGNORED
+            and not name.endswith(".egg-info")
+            and (relative / name).parts not in RUNTIME_PATHS
+        ]
+        for name in directories:
+            if (parent / name).is_symlink():
+                raise ValueError(f"source symlink: {(relative / name).as_posix()}")
+        for name in filenames:
+            path = parent / name
+            if path.is_symlink():
+                raise ValueError(f"source symlink: {(relative / name).as_posix()}")
+            yield path
+
+
+def read_source(path: Path) -> str | None:
+    if path.suffix in BINARY_SUFFIXES:
+        raise ValueError(f"binary outside ignored output: {path.name}")
+    if path.suffix not in TEXT_SUFFIXES and path.name not in {
+        "LICENSE",
+        "CODEOWNERS",
+        ".gitignore",
+        ".gitattributes",
+        ".editorconfig",
+    }:
+        return None
+    raw = path.read_bytes()
+    value = raw.decode("utf-8")
+    if raw.startswith(b"\xef\xbb\xbf") or b"\r" in raw or (raw and not raw.endswith(b"\n")):
+        raise ValueError(f"invalid text encoding/newline: {path.name}")
+    if any(line.rstrip() != line for line in value.splitlines()):
+        raise ValueError(f"trailing whitespace: {path.name}")
+    return value
+
+
 def main() -> None:
     missing = sorted(p for p in REQUIRED if not (ROOT / p).is_file())
     if missing:
         raise ValueError(f"missing repository files: {missing}")
     checked = 0
     links = 0
-    for path in ROOT.rglob("*"):
-        parts = path.relative_to(ROOT).parts
-        if any(p in IGNORED or p.endswith(".egg-info") for p in parts) or not path.is_file():
+    for path in source_files(ROOT):
+        value = read_source(path)
+        if value is None:
             continue
-        if path.suffix in BINARY_SUFFIXES:
-            raise ValueError(f"binary outside ignored output: {path.name}")
-        if path.suffix not in TEXT_SUFFIXES and path.name not in {
-            "LICENSE",
-            "CODEOWNERS",
-            ".gitignore",
-            ".gitattributes",
-            ".editorconfig",
-        }:
-            continue
-        raw = path.read_bytes()
-        value = raw.decode("utf-8")
-        if raw.startswith(b"\xef\xbb\xbf") or b"\r" in raw or (raw and not raw.endswith(b"\n")):
-            raise ValueError(f"invalid text encoding/newline: {path.name}")
-        if any(line.rstrip() != line for line in value.splitlines()):
-            raise ValueError(f"trailing whitespace: {path.name}")
         if path.suffix == ".py":
             ast.parse(value, filename=path.name)
         elif path.suffix == ".json":

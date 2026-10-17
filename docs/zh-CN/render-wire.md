@@ -1,0 +1,66 @@
+# 渲染模型记录协议
+
+[English](../render-wire.md) · [烘焙模型观察](render-model.md) · [架构](architecture.md)
+
+## 数据来源及所有权
+
+[RenderWire](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderWire.java) 序列化 Minecraft 客户端的不可变 [RenderFrame](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderFrame.java)，C++20 对应实现为 [render_wire.hpp](../../include/harrancraft/render_wire.hpp)。记录完整保留调用方分配的会话代次、世界、相机、逻辑帧和采集身份，维度与方块位置、规范状态、相机位置与偏航俯仰、烘焙模型四边形、图集/精灵名称、染色及阴影信息、顶点打包颜色／光照／法线。
+
+新格式独立于原有 512 字节方块桥接 v1 和碰撞几何记录 v1，不修改这两种协议。图集／精灵标识及顶点 UV **不等于**纹理像素、已解析的完整材质、动态光照或宿主已具备渲染能力。目前客户端采样仅覆盖静态烘焙方块。
+
+## 版本 1 二进制布局
+
+整数及 IEEE-754 浮点数均为小端。每条记录由固定 384 字节头部与 0–512 个固定 400 字节四边形组成，最大 **205,184 字节**。保留位及未使用的文本字节必须为零，不直接复制 C++ 结构体。
+
+| 偏移 | 字节数 | 字段 |
+| --- | --- | --- |
+| 0 | 4 | 魔数 `0x31524348` |
+| 4 | 2 | 版本 `1` |
+| 6 | 2 | SNAPSHOT `1` 或 RETIRE `2` |
+| 8 | 4 | 总记录长度 |
+| 12 | 4 | 必须为零 |
+| 16、24、32、40、48 | 各 8 | 正会话代次、世界、相机、逻辑帧、采集身份 |
+| 56、60、64 | 各 4 | 有符号方块 X／Y／Z |
+| 68 | 2 | 四边形数，上限 512 |
+| 70、72 | 各 2 | 维度、规范状态 ASCII 长度 |
+| 74 | 2 | 必须为零 |
+| 76、84、92 | 各 8 | Minecraft 相机 X／Y／Z，64 位浮点 |
+| 100、104 | 各 4 | 相机偏航、俯仰，32 位浮点 |
+| 108 | 4 | 必须为零 |
+| 112 | 64 | 维度 ASCII，剩余补零 |
+| 176 | 192 | 规范状态 ASCII，剩余补零 |
+| 368 | 16 | 必须为零 |
+
+每个四边形固定 400 字节：
+
+| 相对偏移 | 字节数 | 字段 |
+| --- | --- | --- |
+| 0 | 2 | 有符号裁剪面，`-1` 表示不裁剪 |
+| 2 | 2 | 模型面朝向 `0`–`5` |
+| 4 | 2 | 有符号染色索引，`-1` 表示无 |
+| 6、7 | 各 1 | 阴影标志 `0`/`1`、发光等级 `0`–`15` |
+| 8、10 | 各 2 | 图集、精灵名称长度 |
+| 12 | 4 | 必须为零 |
+| 16 | 128 | 图集名称 ASCII，剩余补零 |
+| 144 | 128 | 精灵名称 ASCII，剩余补零 |
+| 272 | 128 | 四个顶点，每顶点 32 字节 |
+
+每个顶点先保存五个 32 位浮点数（局部 X/Y/Z、图集 U/V），后保存三个原始 32 位整数（打包颜色、光照、法线）。遇到未知的 Minecraft 顶点格式必须在客户端拒绝，不能猜测字段布局。
+
+SNAPSHOT 要求非空规范状态；不可见模型可以有零个四边形。RETIRE 保留五项身份及位置，但状态为空、相机全零、四边形数量为零。构造和解码会拒绝未知版本、超长记录、越限数量、非零填充、非法 ASCII、错误面向／染色／阴影、非有限位置／UV／相机以及截断数据。流式读取会先核验长度，再分配完整记录。
+
+## 客户端异步发布与原生有界接收
+
+可选 [RenderPublisher](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderPublisher.java) 通过 [RenderPipe](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderPipe.java) 将有效的 [RenderCaptureSession](../../guest/src/main/java/io/ranzevor/harrancraft/bridge/RenderCaptureSession.java) 连接至调用方自有的私有输出流。客户端线程仅采样、非阻塞排队，独立守护线程处理实际写入、取消与关闭。最多保留八条排队记录，错代次／世界／相机、帧号不递增或捕获号缺失／重复都拒绝。队列饱和、写入失败、源失效等会关闭发布通路；调用方保留句柄，独立检查线程退出与清理异常。建立数据源失败时，尚未接管调用方流。
+
+[RenderReceiver](../../include/harrancraft/render_receiver.hpp) 在一个所属线程上解析任意分片，最多缓存一条 205,184 字节记录，并在读取记录主体前确认长度。`begin(epoch, world, camera, dimension)` 明确预期身份，仅接收严格递增的逻辑帧、连续捕获号，最多暂存十六个模型位置。空模型、RETIRE、正常 EOF 或主动停止撤销相应数据；未知格式、EOF 截断、身份变化、重复／缺失捕获、旧帧及容量溢出撤销整个候选模型集合。恢复须以更高代次重新建会话。
+
+模型与纹理成对输出时，[MaterialCoordinator](../../include/harrancraft/material_coordinator.hpp) 复用两种 v1 编解码器，并分别保留解析缓冲。各流内部保持 FIFO，两流之间的记录和片段允许交错。协调器逐项匹配五项身份，仅在全部精灵到齐后提供模型；新模型或 RETIRE 抵达时立即移除同位置旧材质。已被替换采集的迟到纹理由有界保留身份核验，不会重新激活旧模型。[跨通道材质协调](texture-wire.md#跨通道材质协调)定义采集／位置／字节上限、绝对组装期限、所属线程轮询要求及双方会话终止方式；渲染协议版本和二进制布局保持不变。
+
+现有实现包括客户端发布、原生解码、模型暂存和 CPU 材质协调；尚无已启动或注入消光的渲染端点、引擎图形对象、宿主 GPU 资源或帧同步原生绘制。[源精灵像素协议](texture-wire.md)保留已加载 NativeImage 像素和图集位置，最终 GPU 图集上传仍待接入。流终止前可能已有记录开始写入，因此原生接收独立核对会话身份。
+
+## 跨进程验证与未完成范围
+
+现已正式纳入验证入口的 Java/C++ 参考样本逐字节比较完整 **784 字节**渲染记录；独立 C++ 测试覆盖最大记录、撤销、非法帧头、截断和浮点异常。[RenderWireProcessTests](../../guest/src/test/java/io/ranzevor/harrancraft/bridge/RenderWireProcessTests.java) 通过真实 Java→C++ 进程管道向 [hc-render-peer](../../native/tests/render_peer.cpp) 发送模型及撤销记录，并完整比对回传字节。客户端 GameTest 源码还会对真实钻石方块的模型快照执行序列化，但 CI 只编译该测试，不运行 Minecraft。
+
+[MaterialCoordinatorProcessTests](../../guest/src/test/java/io/ranzevor/harrancraft/bridge/MaterialCoordinatorProcessTests.java) 将模型写入原生进程 stdin，源像素走独立私有 OS 管道。测试完整返回的材质字节、模型／纹理先后、独立半记录、模型替换、双方 EOF 和清理，并使用实际异步发布器强制纹理先到。这些受控进程不运行任何一款游戏；游戏内传输、宿主适配、最终图集上传、绘制调用还原、原生图形提交和真实相机／深度／帧对应仍须分别接入。

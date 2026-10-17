@@ -47,3 +47,263 @@ jobs:
       - name: Compare native Windows version metadata
         if: runner.os == 'Windows'
         run: python tools/windows_smoke.py
+
+  bridge:
+    name: Ubuntu / Java and C++ bridge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONIOENCODING: utf-8
+      CC: gcc-14
+      CXX: g++-14
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Verify Java and C++ bridge processes
+        shell: bash
+        run: |
+          test -x "$JAVA_HOME_21_X64/bin/javac"
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          python tools/test_bridge.py --hc-timeout 600
+
+  bridge-windows:
+    name: Windows / MinGW Java and C++ bridge
+    runs-on: windows-2025
+    timeout-minutes: 20
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - name: Verify native Windows bridge processes
+        shell: pwsh
+        run: |
+          $jdk = $env:JAVA_HOME_21_X64
+          if (-not $jdk -or -not (Test-Path (Join-Path $jdk 'bin/javac.exe'))) {
+            throw 'JDK 21 is not available'
+          }
+          $compiler = (Get-Command g++.exe -ErrorAction Stop).Source
+          $generator = (Get-Command ninja.exe -ErrorAction Stop).Source
+          $target = & $compiler -dumpmachine
+          if ($LASTEXITCODE -ne 0 -or $target -notmatch '^x86_64-.*mingw') {
+            throw 'A native Windows x64 MinGW compiler is required'
+          }
+          $env:CXX = $compiler
+          $env:CMAKE_GENERATOR = 'Ninja'
+          $env:JAVA_HOME = $jdk
+          $env:Path = "$(Join-Path $jdk 'bin');$env:Path"
+          python tools/test_bridge.py --hc-timeout 900
+      - name: Inspect Windows bridge result
+        if: always()
+        shell: pwsh
+        run: |
+          if (-not (Test-Path -LiteralPath 'reports/validation' -PathType Container)) {
+            Write-Output 'Windows bridge validation report unavailable'
+            exit 1
+          }
+          $reports = @(Get-ChildItem 'reports/validation' -Recurse -Filter 'result.json' -ErrorAction Stop)
+          if ($reports.Count -eq 0) {
+            Write-Output 'Windows bridge validation report unavailable'
+            exit 1
+          }
+          $reports | ForEach-Object {
+            $data = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+            Write-Output ("status={0} reason={1} failed_stage={2}" -f $data.status, $data.reason, $data.failed_stage)
+            foreach ($stage in $data.stages) {
+              Write-Output ("stage={0} status={1} exit={2} reason={3}" -f $stage.name, $stage.status, $stage.exit_code, $stage.reason)
+              if ($stage.status -ne 'passed') {
+                Write-Output ("cleanup={0} descendants_terminated={1} error_type={2} cleanup_error_type={3} elapsed_seconds={4}" -f $stage.cleanup, $stage.descendants_terminated, $stage.error_type, $stage.cleanup_error_type, $stage.elapsed_seconds)
+                $metadata = Join-Path $_.DirectoryName ($stage.name + '.process.json')
+                if (Test-Path -LiteralPath $metadata) {
+                  $process = Get-Content -LiteralPath $metadata -Raw | ConvertFrom-Json
+                  Write-Output ("supervisor_exit={0} supervisor_cleanup={1} supervisor_descendants={2} supervisor_error={3}" -f $process.exit_code, $process.cleanup, $process.descendants_terminated, $process.error_type)
+                }
+                if ($stage.remaining_processes) {
+                  Write-Output ("remaining_processes=" + ($stage.remaining_processes -join ','))
+                }
+              }
+              if ($stage.status -ne 'passed' -or $stage.name -eq 'native-tests') {
+                foreach ($stream in @('stdout', 'stderr')) {
+                  $name = $stage.$stream
+                  if (-not $name) { continue }
+                  $log = Join-Path $_.DirectoryName $name
+                  if (Test-Path -LiteralPath $log) {
+                    Write-Output ("{0}:" -f $stream)
+                    Get-Content -LiteralPath $log -Tail 100
+                  }
+                }
+              }
+            }
+          }
+          $nativeLog = 'build/bridge/native/Testing/Temporary/LastTest.log'
+          if (Test-Path -LiteralPath $nativeLog) {
+            Get-Content -LiteralPath $nativeLog -Tail 60
+          }
+
+  bridge-msvc:
+    name: Windows 2022 / MSVC Ninja Java and C++ bridge
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      PYTHONIOENCODING: utf-8
+      VSCMD_SKIP_SENDTELEMETRY: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - name: Verify native MSVC bridge processes
+        shell: cmd
+        run: |
+          @echo off
+          reg add "HKCU\Software\Microsoft\VisualStudio\Telemetry" /v TurnOffSwitch /t REG_DWORD /d 1 /f
+          if errorlevel 1 exit /b 1
+          reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\VSCommon\17.0\SQM" /v OptIn /t REG_DWORD /d 0 /f
+          if errorlevel 1 exit /b 1
+          set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+          if not exist "%VSWHERE%" exit /b 1
+          for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSPATH=%%i"
+          if not defined VSPATH exit /b 1
+          if not exist "%VSPATH%\Common7\Tools\VsDevCmd.bat" exit /b 1
+          call "%VSPATH%\Common7\Tools\VsDevCmd.bat" -no_logo -arch=x64 -host_arch=x64
+          if errorlevel 1 exit /b 1
+          where cl.exe
+          if errorlevel 1 exit /b 1
+          where ninja.exe
+          if errorlevel 1 exit /b 1
+          set "CMAKE_GENERATOR=Ninja"
+          set "CC=cl"
+          set "CXX=cl"
+          set "JAVA_HOME=%JAVA_HOME_21_X64%"
+          if not exist "%JAVA_HOME%\bin\javac.exe" exit /b 1
+          set "PATH=%JAVA_HOME%\bin;%PATH%"
+          python tools/test_bridge.py --hc-timeout 900
+          if errorlevel 1 exit /b 1
+      - name: Inspect MSVC bridge result
+        if: always()
+        shell: pwsh
+        run: |
+          if (-not (Test-Path -LiteralPath 'reports/validation' -PathType Container)) {
+            Write-Output 'MSVC bridge validation report unavailable'
+            exit 1
+          }
+          $reports = @(Get-ChildItem 'reports/validation' -Recurse -Filter 'result.json' -ErrorAction Stop)
+          if ($reports.Count -eq 0) {
+            Write-Output 'MSVC bridge validation report unavailable'
+            exit 1
+          }
+          $reports | ForEach-Object {
+            $report = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+            Write-Output ("status={0} reason={1} failed_stage={2}" -f $report.status, $report.reason, $report.failed_stage)
+            foreach ($stage in $report.stages) {
+              Write-Output ("stage={0} status={1} exit={2} reason={3} cleanup={4}" -f $stage.name, $stage.status, $stage.exit_code, $stage.reason, $stage.cleanup)
+              if ($stage.status -ne 'passed') {
+                Write-Output ("descendants_terminated={0} error_type={1} cleanup_error_type={2} elapsed_seconds={3}" -f $stage.descendants_terminated, $stage.error_type, $stage.cleanup_error_type, $stage.elapsed_seconds)
+              }
+              if ($stage.remaining_processes) {
+                Write-Output ("remaining_processes=" + ($stage.remaining_processes -join ','))
+              }
+              if ($stage.status -ne 'passed' -or $stage.name -eq 'native-tests') {
+                foreach ($stream in @('stdout', 'stderr')) {
+                  $name = $stage.$stream
+                  if (-not $name) { continue }
+                  $log = Join-Path $_.DirectoryName $name
+                  if (Test-Path -LiteralPath $log) {
+                    Write-Output ("{0}:" -f $stream)
+                    Get-Content -LiteralPath $log -Tail 100
+                  }
+                }
+              }
+            }
+          }
+          $nativeLog = 'build/bridge/native/Testing/Temporary/LastTest.log'
+          if (Test-Path -LiteralPath $nativeLog) {
+            Get-Content -LiteralPath $nativeLog -Tail 60
+          }
+
+  fabric-build:
+    name: Ubuntu / Fabric compile and production JAR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Compile Fabric sources and verify production JAR
+        shell: bash
+        run: |
+          test -x "$JAVA_HOME_21_X64/bin/javac"
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          python tools/gradle.py --hc-timeout 1800 build -PrunMinecraftTests=false -PacceptMinecraftEula=false -PrunLanTests=false
+      - name: Inspect Fabric build result
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("reports/validation")
+          reports = sorted(root.glob("*/result.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+          if not reports:
+              print("Fabric validation report unavailable")
+              raise SystemExit(1)
+          path = reports[0]
+          result = json.loads(path.read_text(encoding="utf-8"))
+          print("status=" + str(result.get("status")))
+          print("reason=" + str(result.get("reason", "")))
+          print("minecraft_execution=" + str(result.get("minecraft_execution")))
+          print("lan_execution=" + str(result.get("lan_execution")))
+          for task in result.get("gradle_task_results", []):
+              if task.get("task") in {":compileJava", ":compileGametestJava", ":remapJar", ":verifyGuestJar", ":build"}:
+                  print("task=" + str(task.get("task")) + " outcome=" + str(task.get("outcome")))
+          for stage in result.get("stages", []):
+              print("stage=" + str(stage.get("name")) + " status=" + str(stage.get("status")))
+              if stage.get("status") not in {"failed", "timed_out", "blocked", "interrupted"}:
+                  continue
+              for key in ("stderr", "stdout"):
+                  name = stage.get(key)
+                  if not isinstance(name, str):
+                      continue
+                  log = path.parent / name
+                  if not log.is_file():
+                      continue
+                  lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+                  for line in lines[-100:]:
+                      print(line[:600])
+          if result.get("status") != "passed" or result.get("minecraft_execution") is not False or result.get("lan_execution") is not False:
+              raise SystemExit(1)
+          completed = {
+              task.get("task"): task.get("outcome")
+              for task in result.get("gradle_task_results", [])
+          }
+          if completed.get(":build") not in {"executed", "UP-TO-DATE", "FROM-CACHE"}:
+              raise SystemExit("Gradle build task was not completed")
+          if completed.get(":verifyGuestJar") != "executed":
+              raise SystemExit("Production JAR was not verified by this run")
+          PY

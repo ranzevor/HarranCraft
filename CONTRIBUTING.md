@@ -18,7 +18,7 @@ python tools/verify.py
 python tools/package.py
 ```
 
-See the [development guide](docs/development.md) for the individual checks and formatting commands. Generated files belong in ignored output directories. Game copies are unnecessary for the current test suite; do not upload them to an issue or CI artifact.
+See the [development guide](docs/development.md) for the individual checks and formatting commands. Generated files belong in ignored output directories. Inspector and controlled bridge tests need no game copies. Real Fabric tests have a separate [local validation entry](docs/guest-validation.md); do not upload game files to an issue or CI artifact.
 
 ## Changes and review
 

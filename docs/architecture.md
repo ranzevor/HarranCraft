@@ -2,15 +2,29 @@
 
 [简体中文](zh-CN/architecture.md) · [Documentation](README.md)
 
-## Delivered component
+## Implemented components
 
 `hc-inspect` is an offline development tool. Its data flow is explicit file argument → bounded PE parsing and streaming hash → versioned report. Inputs are read-only; reports carry input positions rather than paths. The parser does not participate in the game process or grant permission for a native callback.
+
+The H2-A source adds a Fabric block adapter, chunk-change observation, a Java session/transport core and an independent C++ test peer. Controlled process tests exercise the wire and lifecycle; Ubuntu CI compiles Fabric/GameTest sources and verifies the production JAR without game execution. [Local logs](validation-20261017.md) record 3/3 server GameTests passing and a client failure at its first bridge attachment. The supplied report attributes those direct Gradle runs to `b1b6234eb81955cc170cc5e8ce66df5191073ca4`; the delivered logs do not independently establish their source identity. The embedding API accepts caller-owned private pipes; it does not provide a user launcher. [Block bridge contract](bridge.md)
+
+The Windows-only [self-image probe](host-observation.md#windows-self-image-probe) supplies read-only on-disk main-executable fingerprints through a fixed C ABI. It does not establish the active engine build from mapped memory or prove session mode or callback safety. The independent [H1 observation core](host-observation.md) checks explicit executable fingerprints, positively asserted single-player/read-phase evidence, session generations and exact world/camera/frame/capture correspondence. Its host-to-guest clip-space projection is mathematical only; it neither locates Dying Light callbacks nor reads the game's camera or depth resources. No game build is accepted by default. The [composite host build gate](host-observation.md#composite-host-build-identity) matches an EXE and its required DLL fingerprints together, revoking camera/session identity after any missing or changed module.
+
+An independent [geometry record codec](geometry.md) now encodes actual Fabric collision snapshots into bounded versioned data readable by a native test peer. Its optional, caller-owned guest geometry output is queued off the Minecraft server thread and retired with the main session. A bounded native stream receiver consumes fragmented geometry bytes and retires staged candidates on EOF or protocol failure. This has only controlled-process evidence: no attachment to Dying Light, registered native collider or render pipeline.
+
+The client-only [baked-model observer](render-model.md) reads actual static Minecraft BakedModel vertex quads and camera pose under positive logical epoch/world/camera/frame/capture tokens, independently of collision VoxelShapes. The [render model record v1](render-wire.md) preserves quads and identity across Java/C++ with controlled process tests. The [source-sprite sampler and material publisher](texture-wire.md) capture bounded NativeImage ARGB pixels and enqueue each complete model/sprite manifest onto independent asynchronous outputs. Failure of either output immediately invalidates its peer and unregisters the publisher without waiting for another client-owner call. The failed local client run did not reach model/pixel sampling; resource-reload callbacks and the seven client completion scenarios remain unaccepted.
+
+The native [MaterialCoordinator](../include/harrancraft/material_coordinator.hpp) joins the two FIFO streams on one owner thread, permits cross-stream arrival and fragmentation in either order, and exposes only complete materials with exact epoch/world/camera/frame/capture identity. New models withdraw older material at the same position; superseded in-flight captures retain only bounded validation records and cannot reactivate old pixels. [Assembly limits and lifecycle](texture-wire.md#cross-channel-material-coordination) bound pending captures, positions, record identities, retained storage and absolute deadlines, with periodic polling required even during input silence. Either stream ending or failing clears the entire association. The coordinator owns CPU data; the caller owns its I/O endpoints. Final GPU atlases, Dying Light graphics registration, live depth calibration and synchronized game frames remain unimplemented.
+
+The [camera calibration and capture projection contract](camera-projection.md) adds versioned similarity transforms, rigid cameras, explicit clip/viewport conventions and absolute coordinate-error checks. Its owner-thread projector validates independent guest/host capture keys, complete material and an explicitly associated latest geometry receipt, retaining one CPU result of at most 3,072 points. Every poll or snapshot rechecks the sources; a newer geometry receipt invalidates the old association, including when another position changes. Guest camera parameters remain controlled inputs, and the existing v1 wires do not establish runtime frame correspondence or real scene occlusion.
+
+The Windows-only [D3D11 depth attachment](d3d11-depth.md) validates the caller's current immediate-context color/depth bindings and viewport against a full composite build session and the P2 camera contract. It owns one read-only depth/stencil view, its device and selected color-view references, with bounded referenced source texel storage. Access rechecks identities and current bindings; failure or explicit retirement releases those references. The module performs no pipeline binding or draw. A registered WARP test exercises controlled software graphics; identifying the actual Dying Light scene pass, depth contents and safe submission phase remains a host integration requirement.
 
 ## Planned runtime boundary
 
 The native Dying Light 1 adapter owns host object identities, original-world queries, camera/depth acquisition and accepted engine calls. A real Fabric guest owns Minecraft inventory, blocks, items and Minecraft simulation. A bridge transports versioned snapshots and commands; it is not a second independent authority over either game's health or objects.
 
-The native adapter is expected to use a Windows x64 toolchain; the concrete runtime and Minecraft/Fabric/JDK versions are selected alongside working integrations. Garry's Mod is not a component. Native geometry submission and a depth-aware GPU compositor remain competing experiments until host evidence selects a route.
+The native adapter targets a Windows x64 toolchain; the guest's pinned toolchain in [compatibility](compatibility.md) has resolved and compiled in Ubuntu CI, with integrated-client and dual-runtime acceptance still pending. Garry's Mod is not a component. Native geometry submission and a depth-aware GPU compositor remain competing experiments until host evidence selects a route.
 
 | State or operation | Authority and acceptance |
 | --- | --- |
@@ -23,11 +37,13 @@ The native adapter is expected to use a Windows x64 toolchain; the concrete runt
 
 ## Wire and execution requirements
 
-When the first native producer and Fabric consumer are introduced, `include/harrancraft/wire.hpp` will be the single native wire-layout authority with a validated matching Java implementation. That file and ABI are not present in the inspector-only baseline. HarranCraft mappings must not reuse a reference project's mapping name or assume its layout.
+`include/harrancraft/wire.hpp` defines the implemented version 1, 512-byte little-endian protocol. Java `Frame` matches its encoding and strict validation; reference-frame and real-process tests cover the controlled endpoints. HarranCraft mappings must not reuse a reference project's mapping name or assume its layout.
 
 Every game-facing event needs an origin, session generation, unique event identity and applicable target lifetime. Bound queues and work per update; define saturation and acknowledgements. Reconnection cannot replay an old session's damage or resurrect removed collision resources. A protocol break requires a version change and producer/consumer refusal or migration behavior.
 
 Host modification is gated by accepted image fingerprints, a positively identified single-player session and a verified engine-safe callback phase. Unknown or disallowed states invalidate the mutation path. Rendering callbacks and window messages are observation candidates, not automatically safe mutation points. No blocking wait, filesystem work or synchronous GPU readback belongs in a game mutation callback.
+
+H2-A authorizes only Minecraft block operations. Server-thread checks require a ready, private integrated server before access and revoke active sessions when a required state is lost. In the [pinned Minecraft 1.21.4 mappings](validation-20261017.md), Yarn `isLoading()` exposes Mojang `isReady()` and must return true for admission. Stream workers never perform world access. The chunk callback observes actual changes; failed event/receipt delivery invalidates the session rather than replaying mutations. New-epoch snapshots are required after disconnect, because a committed Minecraft change is not automatically rolled back when its acknowledgement fails. Host collision acknowledgement and cross-runtime rollback in the table above remain future integration contracts.
 
 ## Core experiments
 

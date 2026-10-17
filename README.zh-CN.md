@@ -19,11 +19,25 @@ HarranCraft 是将真实 Minecraft 运行时与《消逝的光芒 1》融合的�
 | 固定文件版本资源读取 | 已实现 |
 | 英文／简体中文命令行及带版本号的 JSON 报告 | 已实现 |
 | 损坏输入、内存上界和安装包 CLI 测试 | 已纳入验证入口 |
-| 消光宿主适配器及真实 Fabric 客体 | 尚未实现 |
+| Java／C++ 桥接协议及私有管道 | 受控世界及真实跨进程测试通过 |
+| Fabric 方块读取、条件修改及变化观察 | 源码已实现；Ubuntu Fabric 构建／JAR 检查及本地服务端 GameTest 3/3 通过，客户端首次桥接接入失败 |
+| Windows 宿主程序身份探测 | Windows x64 只读 EXE／已加载 DLL 指纹、受控 ABI／进程测试，不加载游戏 |
+| 真实 Minecraft 碰撞形状快照 | Fabric 权威 VoxelShape API、代次与订阅门禁；本地空气／整方块／半砖形状测试通过，集成服务器快照及原生宿主碰撞未验收 |
+| 碰撞几何异步传输 | Java／C++ 协议、客体有界异步管道、原生流式接收和几何候选表；未接入消光物理 |
+| 客户端烘焙模型观察 | 静态方块 BakedModel 采样源码、图集标识、压缩顶点及带逻辑帧身份的相机姿态；客户端运行未到达采样验收 |
+| 渲染模型数据流 | Java／C++ 版本 1、有界客户端异步发布、原生分片接收及候选模型生命周期验证；仍无消光渲染端点 |
+| 源精灵材质批次 | NativeImage 采样源码、有界 ARGB 记录及双流异步批次；原生端按五项身份关联并容忍跨通道乱序，仅完整材质可用；实机采样／重载未验收，尚无最终显存图集或宿主纹理上传 |
+| H1 宿主观察核心 | C++20 EXE／DLL 组合构建身份、会话与相机帧契约及隔离 CTest；未接入游戏 |
+| 相机与深度准备 | 版本化双相机标定及采集归属；Windows D3D11 只读深度视图准备、有界源引用及已注册 WARP 回归；尚未关联真实游戏相机与深度 |
+| 消光宿主适配器 | 尚未实现 |
 | 游戏内遮挡、原生方块碰撞、伤害与 TNT | 尚未实现或实机验证 |
 | 可玩发行包或安装器 | 尚未提供 |
 
-核查工具识别文件内容，**不加载 DLL、不挂钩游戏、不安装模组、不修改存档，也不将某个游戏版本判定为兼容**。宿主与客体开发仍属于[完整路线图](docs/zh-CN/roadmap.md)，该工具不替代融合目标。
+核查工具识别文件内容，**不加载 DLL、不挂钩游戏、不安装模组、不修改存档，也不将某个游戏版本判定为兼容**。[完整路线图](docs/zh-CN/roadmap.md)继续保留完整双运行时融合目标。
+
+H2-A 提供接收调用方自有私有管道的 Fabric 嵌入接口、已加载位置读取、条件方块替换及订阅变化事件。当前没有最终用户启动器或消光端点。[桥接契约](docs/zh-CN/bridge.md) · [本地验证](docs/zh-CN/guest-validation.md)
+
+[2026-10-17 本地证据](docs/zh-CN/validation-20261017.md)记录服务端三项 GameTest 通过及客户端首次接入失败。所附报告将直接 Gradle 执行归于 `b1b6234eb81955cc170cc5e8ce66df5191073ca4`，所附日志未独立证明这些命令的源码身份。客户端方块往返、模型／像素采样、资源重载及全部七项完成场景仍未验收；普通云端 Fabric CI 仍仅编译。
 
 ## 使用核查工具
 
@@ -57,9 +71,17 @@ python tools/package.py
 
 [CI](https://github.com/ranzevor/HarranCraft/actions/workflows/ci.yml)在 PR 和手动运行时执行 Ubuntu 与 Windows 检查，结果对应实际源码版本，不能代替游戏内兼容验证。[开发指南](docs/zh-CN/development.md) · [兼容范围](docs/zh-CN/compatibility.md) · [验证分层](docs/testing.md)
 
+已安装 JDK 21、CMake 3.25+ 及 C++20 编译器时，可运行不依赖游戏的 Java／C++ 检查：
+
+```console
+python tools/test_bridge.py
+```
+
+Fabric 配置版本及明确的本地构建／GameTest 命令见[本地验证](docs/zh-CN/guest-validation.md)。CI 编译 Fabric 及 GameTest 源码并检查生产 JAR，不启动 Minecraft；游戏测试默认关闭，不在 CI 中运行。
+
 ## 融合设计
 
-计划中的原生宿主适配器与 Fabric 客体通过带版本号的协议交换世界、输入和玩法事件。渲染与物理交互分别验收：画面对齐不等于深度遮挡，客体碰撞不等于宿主原生障碍物。
+已实现的客体桥接通过带版本号的协议与原生测试进程交换方块命令和事件；计划中的宿主适配器继续扩展原生世界交互、输入和玩法事件。渲染与物理交互分别验收：画面对齐不等于深度遮挡，客体碰撞不等于宿主原生障碍物。
 
 修改宿主前必须识别具体程序版本、正向确认单人会话，并验证引擎安全执行阶段。状态未知或不可用时拒绝修改。可玩发布前，必须在原版游戏中验证相机与深度对应、碰撞所有权及双向伤害。
 
@@ -70,6 +92,11 @@ python tools/package.py
 | 位置 | 用途 |
 | --- | --- |
 | `src/harrancraft_tools/` | 只读核查工具与语言资源 |
+| `guest/` | Fabric 端点、协议核心及隔离 GameTest 源码 |
+| `include/harrancraft/wire.hpp` | 原生 wire 布局权威 |
+| `include/harrancraft/host_probe.h` | Windows 宿主身份 C ABI |
+| `native/host/` | Windows 身份探测与受控 D3D11 深度附件源码 |
+| `native/tests/` | C++ 契约测试与私有管道测试进程 |
 | `schemas/` | 机器可读报告契约 |
 | `tests/` | 动态生成的输入样本及回归测试 |
 | `tools/` | 仓库、构建和安装包 CLI 验证 |

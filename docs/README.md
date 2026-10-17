@@ -8,9 +8,19 @@
 | Build, format and test changes | [Development](development.md) |
 | Understand implemented versus planned platforms | [Compatibility](compatibility.md) |
 | Understand state ownership and integration boundaries | [Architecture](architecture.md) |
+| Integrate a private-pipe peer and handle recovery | [Block bridge](bridge.md) |
+| Encode and transfer Minecraft collision volumes | [Geometry side-channel](geometry.md) |
+| Inspect real Minecraft client baked models and camera identities | [Baked-model observation](render-model.md) |
+| Exchange versioned render quads and camera snapshots | [Render model record protocol](render-wire.md) |
+| Capture loaded sprite source pixels and validate ARGB transfer | [Source sprite pixel transport](texture-wire.md) |
+| Calibrate coordinates and bind controlled dual-camera projections | [Camera projection contract](camera-projection.md) |
+| Validate D3D11 scene attachments and own a read-only depth view | [D3D11 depth contract](d3d11-depth.md) |
+| Build the Fabric guest and run isolated game tests | [Local guest validation](guest-validation.md) |
+| Review actual local GameTest results and readiness corrections | [2026-10-17 validation evidence](validation-20261017.md) |
 | Follow complete gameplay milestones | [Roadmap](roadmap.md) |
 | Classify and reproduce verification | [Testing](testing.md) |
 | Evaluate Dying Light interface evidence | [Host research](host-research.md) |
+| Integrate read-only host session/camera observations | [Host observation core](host-observation.md) |
 | Understand repository/bootstrap decisions | [Decision 0001](decisions/0001-independent-tooling-baseline.md) |
 | Inspect the initial verification record | [Baseline evidence](evidence/initial-baseline.md) |
 

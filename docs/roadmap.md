@@ -14,8 +14,18 @@ Milestones describe required outcomes rather than a release schedule. Work indep
 | H5 — Playable systems | Input return, inventory, items, building and creatures | End-to-end play through both original runtimes with resource/performance measurements |
 | H6 — Persistence and delivery | Persistent bridge state, installation, upgrade, removal and exit recovery | Disposable test data, compatibility/recovery evidence and a separately approved release |
 
-## Next independent work
+The isolated native geometry ledger stages mapped AABBs with bounded ownership but has no Dying Light collision registration, physics filtering or game-safe cleanup implementation.
 
-Implement the Fabric endpoint and native observation experiments as separate, testable workstreams. Select Minecraft/Fabric/JDK versions from actual dependency resolution and launch evidence. Keep game-changing code disabled until its mode and execution-phase checks have real evidence, while continuing source, protocol and guest tests in isolated environments.
+## H2 acceptance sequence
+
+**H2-A — Block events and bidirectional IPC:** source implementation and controlled Java/C++ process tests are available. Pinned dependency resolution, Fabric compilation and production JAR checks passed on Ubuntu/JDK 21 in [CI #38892925451](https://github.com/ranzevor/HarranCraft/actions/runs/38892925451); ordinary cloud Fabric CI remains compile-only. [Local logs](validation-20261017.md) record 3/3 server GameTests passing and a client failure at its first bridge attachment. The supplied report attributes those direct Gradle runs to `b1b6234eb81955cc170cc5e8ce66df5191073ca4`; the delivered logs do not independently establish their source identity. Complete the remaining [local validation](guest-validation.md): all seven client scenarios, three screenshots, real world/mode transitions and the full Windows Fabric production-JAR checks. Linux and Windows/MinGW native process checks retain independent results for each revision in [PR #2](https://github.com/ranzevor/HarranCraft/pull/2). The guest accepts embedded private pipes; a user launcher and Dying Light endpoint are not part of this batch.
+
+**H2-B — Real guest graphics output:** Client baked-model sampling and the independent Java/C++ render record now have an optional bounded asynchronous publisher and native candidate receiver with revoked frame identity; loaded sprite-source pixels now support bounded async batch publication and native completeness-gated CPU caching with resource-reload revocation. The failed local client run did not reach model/pixel sampling or validate reload callbacks. Final GPU atlas, animation, actual Dying Light draw calls, calibrated camera/depth and real-game validation remain separate. Complete H2-A game acceptance, transport real render data with exact frame/lifetime pairing, and prove host view/projection/depth correspondence before H3 claims. Fluids, block entities, final lighting and host occlusion remain separate.
+
+H1 observation experiments remain independently testable. Keep host-changing code gated by actual build, mode and engine-phase evidence. Continue source and protocol work without waiting for an unrelated game environment.
+
+The [controlled projection contract](camera-projection.md) provides similarity calibration, explicit camera/viewport conventions and a bounded current capture tied to live material, geometry and host observation identities. This supports H2-B calibration work; the caller-supplied association and projection parameters still require actual game sampling and synchronization evidence before H3 acceptance.
+
+The [D3D11 depth contract](d3d11-depth.md) adds bounded reference ownership and read-only depth-view preparation against current build/camera identities. Its Windows WARP regression tests controlled depth occlusion without either game. Actual scene-pass identification, native submission, material upload and collision registration remain required before H3 acceptance.
 
 The long-term scope remains full dual-runtime fusion. Replacing models/textures, window overlays and guest-only interactions cannot satisfy H3–H6.
