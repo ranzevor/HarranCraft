@@ -4,6 +4,7 @@
 
 ### Added
 
+- Native cross-channel material coordination with exact capture identities, bounded out-of-order assembly, complete-manifest activation, superseded-capture draining, absolute deadlines and independent Java/C++ OS-pipe regressions.
 - Bounded multi-sprite material batch publisher, client-resource reload cancellation, and native CPU texture cache with complete-manifest gates, incremental source-pixel reception and Java/C++ process tests.
 - Client-only loaded SpriteContents NativeImage pixel sampling with atlas UV/placement metadata, bounded ARGB Java/C++ record v1, golden-byte and native process regressions; no game textures committed.
 - Bounded client render publisher and owner-thread-only native stream receiver, with fail-closed camera/frame/capture identity checks, backpressure, stale-model retirement and process/worker regressions.
@@ -31,6 +32,7 @@
 
 ### Changed
 
+- Material publishers immediately invalidate both transports and unregister on either asynchronous output failure, with one-time cancellation, preserved cleanup errors and silent-owner/concurrent-failure regressions.
 - Validation preserves probe timeout/interruption and diagnostic outcomes, requires completion of requested Gradle tasks even after exit code zero, rejects ambiguous invocation options and fixes game-test opt-ins per invocation.
 - Private-pipe shutdown supports explicit owned-endpoint cancellation, preserves I/O and cleanup failures, and exposes worker termination separately from connection invalidation. Queue handoff rejects reads completing after close. Native fault tests cover saturation, broken and partial pipes, concurrent close and repeated resource retirement.
 - Repository text checks cover Java, C++, Gradle and properties files; generated caches are pruned before traversal. CI Action and permission restrictions remain unchanged.
@@ -44,6 +46,8 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 
 ### 未发布变更
 
+- 新增原生跨通道材质协调：精确采集身份、有界乱序组装、完整清单激活、已替换采集的在途校验、绝对期限及独立 Java／C++ OS 管道回归。
+- 材质发布器在任一异步输出失败时立即取消双方传输并注销，保留单次取消、清理异常及所属线程静默／并发故障回归。
 - 新增有界多精灵材质异步批次、客户端资源重载时取消输出、原生 CPU 源像素完整性缓存与流接收，并补充 Java／C++ 进程回归。
 - 新增客户端 SpriteContents／NativeImage 已加载源图像只读采样、图集 UV／坐标、有界 ARGB Java／C++ 协议及跨语言／跨进程回归，不提交游戏贴图。
 - 新增有界客户端渲染发布器与原生分片接收器，拒绝错误相机／帧／采集身份，覆盖背压、断连撤销及真实跨进程与线程验收。

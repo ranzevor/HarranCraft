@@ -58,6 +58,7 @@ STAGES = [
     "render-process-tests",
     "texture-process-tests",
     "material-process-tests",
+    "material-coordinator-process-tests",
     "render-receiver-process-tests",
     "pipe-tests",
     "observation-tests",
@@ -269,6 +270,16 @@ def validate(check: Validation, arguments: list[str]) -> None:
             str(java),
             f"{PACKAGE}.MaterialProcessTests",
             str(bin_dir / f"hc-material-peer{extension}"),
+        ],
+    )
+    check.run(
+        "material-coordinator-process-tests",
+        [
+            "java",
+            "-cp",
+            str(java),
+            f"{PACKAGE}.MaterialCoordinatorProcessTests",
+            str(bin_dir / f"hc-material-coordinator-peer{extension}"),
         ],
     )
     check.run(

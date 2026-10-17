@@ -55,10 +55,12 @@ SNAPSHOT 要求非空规范状态；不可见模型可以有零个四边形。RE
 
 [RenderReceiver](../../include/harrancraft/render_receiver.hpp) 在一个所属线程上解析任意分片，最多缓存一条 205,184 字节记录，并在读取记录主体前确认长度。`begin(epoch, world, camera, dimension)` 明确预期身份，仅接收严格递增的逻辑帧、连续捕获号，最多暂存十六个模型位置。空模型、RETIRE、正常 EOF 或主动停止撤销相应数据；未知格式、EOF 截断、身份变化、重复／缺失捕获、旧帧及容量溢出撤销整个候选模型集合。恢复须以更高代次重新建会话。
 
-现有链路只有客户端可选发布接口、原生记录解码及模型候选管理，**尚未建立消光原生正式渲染端点**。上述类型不持有引擎图形资源或跨运行时同步绘制。[独立源精灵像素协议](texture-wire.md)现可保留已加载 NativeImage 源像素和图集位置，但不执行最终 GPU 图集上传。即使失效前仍有记录开始写入，原生侧也必须拒绝旧会话身份。
+模型与纹理成对输出时，[MaterialCoordinator](../../include/harrancraft/material_coordinator.hpp) 复用两种 v1 编解码器，并分别保留解析缓冲。各流内部保持 FIFO，两流之间的记录和片段允许交错。协调器逐项匹配五项身份，仅在全部精灵到齐后提供模型；新模型或 RETIRE 抵达时立即移除同位置旧材质。已被替换采集的迟到纹理由有界保留身份核验，不会重新激活旧模型。[跨通道材质协调](texture-wire.md#跨通道材质协调)定义采集／位置／字节上限、绝对组装期限、所属线程轮询要求及双方会话终止方式；渲染协议版本和二进制布局保持不变。
+
+现有实现包括客户端发布、原生解码、模型暂存和 CPU 材质协调；尚无已启动或注入消光的渲染端点、引擎图形对象、宿主 GPU 资源或帧同步原生绘制。[源精灵像素协议](texture-wire.md)保留已加载 NativeImage 像素和图集位置，最终 GPU 图集上传仍待接入。流终止前可能已有记录开始写入，因此原生接收独立核对会话身份。
 
 ## 跨进程验证与未完成范围
 
 现已正式纳入验证入口的 Java/C++ 参考样本逐字节比较完整 **784 字节**渲染记录；独立 C++ 测试覆盖最大记录、撤销、非法帧头、截断和浮点异常。[RenderWireProcessTests](../../guest/src/test/java/io/ranzevor/harrancraft/bridge/RenderWireProcessTests.java) 通过真实 Java→C++ 进程管道向 [hc-render-peer](../../native/tests/render_peer.cpp) 发送模型及撤销记录，并完整比对回传字节。客户端 GameTest 源码还会对真实钻石方块的模型快照执行序列化，但 CI 只编译该测试，不运行 Minecraft。
 
-已实现客户端可选发布器及独立原生接收器，并在受控进程内验证；[独立材质批次发布与源纹理接收](texture-wire.md)新增多精灵完整性门禁及失效撤销；尚未形成实际 Minecraft→消光渲染通路，缺少宿主适配、纹理图集图像传输、绘制调用还原、原生图形提交和双运行时帧时间对应。后续需独立处理数据所有权、旧身份拒绝、纹理像素以及宿主深度和投影矩阵关联。
+[MaterialCoordinatorProcessTests](../../guest/src/test/java/io/ranzevor/harrancraft/bridge/MaterialCoordinatorProcessTests.java) 将模型写入原生进程 stdin，源像素走独立私有 OS 管道。测试完整返回的材质字节、模型／纹理先后、独立半记录、模型替换、双方 EOF 和清理，并使用实际异步发布器强制纹理先到。这些受控进程不运行任何一款游戏；游戏内传输、宿主适配、最终图集上传、绘制调用还原、原生图形提交和真实相机／深度／帧对应仍须分别接入。

@@ -23,9 +23,13 @@ python tools/test_bridge.py
 
 `python tools/test_bridge.py` 还包含独立几何记录、异步管道故障／回收、原生有界分片接收及 Java／C++ 跨进程验证；协议见[几何传输说明](geometry.md)，不会启动游戏、向消光传输或执行 GameTest。
 
-`python tools/test_bridge.py` 纳入纯 Java 渲染身份、压缩顶点、渲染记录和异步发布故障回归、完整跨语言参考帧、原生接收 CTest 及真实跨进程交换；上一版本漏接入的渲染协议测试已补充注册并运行。仅客户端的烘焙模型采样器和 GameTest 源码通过固定 Fabric 配置编译；详见[烘焙模型观察](render-model.md)，CI 不运行真实 Minecraft 几何采样。
+`python tools/test_bridge.py` 纳入纯 Java 渲染身份、压缩顶点、渲染记录和异步发布故障回归、完整跨语言参考帧、原生接收 CTest 及真实跨进程交换。仅客户端的烘焙模型采样器和 GameTest 源码通过固定 Fabric 配置编译；详见[烘焙模型观察](render-model.md)，CI 不运行真实 Minecraft 几何采样。
 
-[源精灵像素及材质批次契约](texture-wire.md)额外验证纯 Java／C++ ARGB、完整参考帧、双异步输出、原生有界材质接收、资源重载取消及真实 Java／C++ 进程管道。固定 Fabric 构建编译仅客户端 SpriteContents 访问器、材质发布入口、CLIENT_RESOURCES 资源重载监听器和读取 NativeImage 的 GameTest 源码；普通 CI 不执行 GameTest 或实际 Mixin 加载，也不将任何游戏二进制或素材加入仓库。
+[源精灵像素与材质协调契约](texture-wire.md)纳入 Java／C++ ARGB、完整参考帧、双异步输出和原生有界材质接收。已注册的 `material-coordinator` CTest 覆盖跨通道顺序、样本各分片位置、完整清单激活、替换／撤销、准入边界、绝对期限，以及同一实例使用更高代次恢复。`MaterialPipelineTests` 检查客户端所属线程不再调用发布器时，异步写入／刷新失败仍会立即取消双方输出。
+
+`material-coordinator-process-tests` 阶段通过 `MaterialCoordinatorProcessTests` 驱动 `hc-material-coordinator-peer`；模型使用子进程 stdin，纹理走独立私有 Windows 命名管道或 POSIX FIFO。测试核实两条通道的实际消费、返回模型／像素的完整字节、`MaterialPublisher` 强制纹理先到、缺失／重复／错误身份、超时及 EOF／端点清理；还在原生材质已可用后填满实际发布器的纹理队列，检查双方取消及原生撤销，再以新进程／端点和更高代次恢复并拒绝旧流量。原有按序 `MaterialProcessTests` 继续独立验证单模型接收器。这些阶段记录真实进程证据，不运行 Minecraft 或消光。
+
+固定 Fabric 构建编译仅客户端 SpriteContents 访问器、材质发布入口、`CLIENT_RESOURCES` 资源重载监听器和读取实际方块 NativeImage 的 GameTest 源码。普通 CI 不执行 GameTest 或实际 Mixin 加载；仓库不包含游戏二进制或提取的素材。
 
 ## Fabric 编译
 

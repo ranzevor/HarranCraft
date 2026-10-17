@@ -22,12 +22,27 @@ struct SpriteKey {
     auto operator<=>(const SpriteKey&) const = default;
 };
 
+inline constexpr std::size_t max_material_sprites = 16;
+
+inline std::set<SpriteKey> sprite_manifest(const render::Record& model) {
+    std::set<SpriteKey> requested;
+    for (const auto& quad : model.quads) {
+        texture::check_text(quad.atlas, 96);
+        texture::check_text(quad.sprite, 128);
+        requested.insert({quad.atlas, quad.sprite});
+        if (requested.size() > max_material_sprites) {
+            throw std::invalid_argument("Model exceeds material sprite capacity");
+        }
+    }
+    return requested;
+}
+
 enum class State { idle, pending, ready, retired, invalid, ended, stopped };
 
 // One current model capture owns all its CPU-side source sprites. No GPU handles.
 class MaterialCache {
 public:
-    static constexpr std::size_t max_sprites = 16;
+    static constexpr std::size_t max_sprites = max_material_sprites;
 
     MaterialCache() : owner_(std::this_thread::get_id()) {}
 
@@ -72,15 +87,7 @@ public:
         }
         std::set<SpriteKey> requested;
         try {
-            for (const auto& quad : model.quads) {
-                texture::check_text(quad.atlas, 96);
-                texture::check_text(quad.sprite, 128);
-                requested.insert({quad.atlas, quad.sprite});
-                if (requested.size() > max_sprites) {
-                    retire(State::invalid);
-                    return false;
-                }
-            }
+            requested = sprite_manifest(model);
         } catch (const std::invalid_argument&) {
             retire(State::invalid);
             return false;

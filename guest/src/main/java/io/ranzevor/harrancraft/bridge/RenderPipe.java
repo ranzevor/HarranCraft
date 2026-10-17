@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Bounded client-owned render output with no stream writes on the capture thread. */
@@ -28,6 +29,8 @@ public final class RenderPipe implements AutoCloseable {
     private final AtomicReference<StopReason> stopped = new AtomicReference<>();
     private final AtomicReference<Throwable> ioFailure = new AtomicReference<>();
     private final AtomicReference<Throwable> cleanupFailure = new AtomicReference<>();
+    private final AtomicReference<Runnable> stopListener = new AtomicReference<>();
+    private final AtomicBoolean stopNotified = new AtomicBoolean();
     private long frame;
     private long capture;
 
@@ -70,6 +73,21 @@ public final class RenderPipe implements AutoCloseable {
         if (owner != Thread.currentThread()) {
             throw new IllegalStateException("Render output requires the capture owner thread");
         }
+    }
+
+    void onStop(Runnable listener) {
+        requireOwner();
+        if (!stopListener.compareAndSet(null, Objects.requireNonNull(listener))) {
+            throw new IllegalStateException("Render stop listener is already registered");
+        }
+        notifyStopped();
+    }
+
+    private void notifyStopped() {
+        Runnable listener = stopListener.get();
+        if (isOpen() || listener == null || !stopNotified.compareAndSet(false, true)) return;
+        try { listener.run(); }
+        catch (RuntimeException error) { record(cleanupFailure, error); }
     }
 
     public boolean offer(RenderWire data) {
@@ -128,6 +146,7 @@ public final class RenderPipe implements AutoCloseable {
         writer.interrupt();
         cancel.start();
         closeOutput.start();
+        notifyStopped();
     }
 
     private static void record(AtomicReference<Throwable> slot, Throwable error) {

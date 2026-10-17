@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Captures a model and all required source sprites before enqueueing either channel. */
 public final class MaterialPublisher implements AutoCloseable {
@@ -20,6 +21,7 @@ public final class MaterialPublisher implements AutoCloseable {
     private final RenderPipe models;
     private final TexturePipe textures;
     private final Thread owner = Thread.currentThread();
+    private final AtomicBoolean transportsInvalidated = new AtomicBoolean();
     private boolean stopped;
 
     public MaterialPublisher(RenderCaptureSession capture, SpriteSource sprites,
@@ -34,6 +36,8 @@ public final class MaterialPublisher implements AutoCloseable {
         Objects.requireNonNull(cancelTexture);
         models = new RenderPipe(epoch, world, camera, modelOutput, cancelModel);
         textures = new TexturePipe(epoch, world, camera, textureOutput, cancelTexture);
+        models.onStop(this::invalidateTransports);
+        textures.onStop(this::invalidateTransports);
     }
 
     public boolean publish(long frame, long captureId, Frame.Key key) {
@@ -82,7 +86,8 @@ public final class MaterialPublisher implements AutoCloseable {
 
     public boolean isOpen() {
         requireOwner();
-        if (!stopped && (!capture.isActive() || !models.isOpen() || !textures.isOpen())) close();
+        if (!stopped && (transportsInvalidated.get()
+                || !capture.isActive() || !models.isOpen() || !textures.isOpen())) close();
         return !stopped;
     }
 
@@ -98,8 +103,10 @@ public final class MaterialPublisher implements AutoCloseable {
 
     // May be called by a resource-reload listener without entering game callbacks.
     public void invalidateTransports() {
+        if (!transportsInvalidated.compareAndSet(false, true)) return;
         models.close();
         textures.close();
+        MaterialReloadRegistry.untrack(this);
     }
 
     @Override public void close() {
@@ -108,7 +115,6 @@ public final class MaterialPublisher implements AutoCloseable {
         stopped = true;
         capture.stop();
         invalidateTransports();
-        MaterialReloadRegistry.untrack(this);
     }
 
     private void requireOwner() {

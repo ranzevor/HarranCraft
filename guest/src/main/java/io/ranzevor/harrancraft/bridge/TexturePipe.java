@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Asynchronously transfers one complete, bounded source-sprite batch per capture. */
@@ -35,6 +36,8 @@ public final class TexturePipe implements AutoCloseable {
     private final AtomicReference<StopReason> stopped = new AtomicReference<>();
     private final AtomicReference<Throwable> ioFailure = new AtomicReference<>();
     private final AtomicReference<Throwable> cleanupFailure = new AtomicReference<>();
+    private final AtomicReference<Runnable> stopListener = new AtomicReference<>();
+    private final AtomicBoolean stopNotified = new AtomicBoolean();
     private long lastFrame;
     private long lastCapture;
 
@@ -77,6 +80,21 @@ public final class TexturePipe implements AutoCloseable {
         if (Thread.currentThread() != owner) {
             throw new IllegalStateException("Material publishing requires the capture owner thread");
         }
+    }
+
+    void onStop(Runnable listener) {
+        requireOwner();
+        if (!stopListener.compareAndSet(null, Objects.requireNonNull(listener))) {
+            throw new IllegalStateException("Texture stop listener is already registered");
+        }
+        notifyStopped();
+    }
+
+    private void notifyStopped() {
+        Runnable listener = stopListener.get();
+        if (isOpen() || listener == null || !stopNotified.compareAndSet(false, true)) return;
+        try { listener.run(); }
+        catch (RuntimeException error) { record(cleanupFailure, error); }
     }
 
     public boolean offerBatch(RenderFrame.Identity identity, List<TextureWire> sprites) {
@@ -154,6 +172,7 @@ public final class TexturePipe implements AutoCloseable {
         writer.interrupt();
         cancel.start();
         closeOutput.start();
+        notifyStopped();
     }
 
     private static void record(AtomicReference<Throwable> slot, Throwable error) {

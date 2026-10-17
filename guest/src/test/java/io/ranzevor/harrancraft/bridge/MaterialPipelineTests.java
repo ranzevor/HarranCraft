@@ -63,12 +63,16 @@ public final class MaterialPipelineTests {
         require(output.flushed.get() == count, "Material output did not flush completed batches");
     }
 
-    private static void retired(RenderPipe model, TexturePipe texture) throws InterruptedException {
+    private static void terminated(RenderPipe model, TexturePipe texture) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while ((!model.isTerminated() || !texture.isTerminated())
                 && System.nanoTime() < deadline) Thread.sleep(2);
         require(model.isTerminated() && texture.isTerminated(),
                 "Model or material transport workers survived shutdown");
+    }
+
+    private static void retired(RenderPipe model, TexturePipe texture) throws InterruptedException {
+        terminated(model, texture);
         require(model.cleanupFailure() == null && texture.cleanupFailure() == null,
                 "Material transport failed to close owned endpoints");
     }
@@ -102,6 +106,158 @@ public final class MaterialPipelineTests {
         @Override public void write(byte[] bytes, int at, int count) throws IOException {
             throw new IOException("Source sprite output failed");
         }
+    }
+
+    private static final class GatedFailure extends OutputStream {
+        private final CountDownLatch started;
+        private final CountDownLatch release;
+        private final boolean failOnFlush;
+
+        GatedFailure(CountDownLatch started, CountDownLatch release, boolean failOnFlush) {
+            this.started = started;
+            this.release = release;
+            this.failOnFlush = failOnFlush;
+        }
+
+        @Override public void write(int value) throws IOException {
+            write(new byte[]{(byte) value}, 0, 1);
+        }
+
+        @Override public void write(byte[] bytes, int at, int count) throws IOException {
+            if (!failOnFlush) fail();
+        }
+
+        @Override public void flush() throws IOException {
+            if (failOnFlush) fail();
+        }
+
+        private void fail() throws IOException {
+            started.countDown();
+            try {
+                if (!release.await(5, TimeUnit.SECONDS)) {
+                    throw new IOException("Material failure gate timed out");
+                }
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Material failure gate interrupted", error);
+            }
+            throw new IOException("Material output failed after peer write started");
+        }
+    }
+
+    private static void pairedFailure(long epoch, boolean textureFails, boolean flush)
+            throws InterruptedException {
+        Stalled blocked = new Stalled();
+        GatedFailure failure = new GatedFailure(new CountDownLatch(1), blocked.entered, flush);
+        AtomicInteger modelCancel = new AtomicInteger(), textureCancel = new AtomicInteger();
+        MaterialPublisher publisher = new MaterialPublisher(source(epoch),
+                MaterialPipelineTests::sprites, epoch, 7, 9,
+                textureFails ? blocked : failure, modelCancel::incrementAndGet,
+                textureFails ? failure : blocked, textureCancel::incrementAndGet);
+        RenderPipe model = publisher.modelTransport();
+        TexturePipe texture = publisher.textureTransport();
+        MaterialReloadRegistry.track(publisher);
+        require(publisher.publish(1, 1, KEY), "Paired failure capture was refused");
+        retired(model, texture);
+        Throwable observed = textureFails ? texture.ioFailure() : model.ioFailure();
+        require(observed instanceof IOException && observed.getMessage().equals(
+                    "Material output failed after peer write started"),
+                "The original material output failure was lost");
+        require((textureFails ? texture.stopReason() == TexturePipe.StopReason.OUTPUT_FAILED
+                    : model.stopReason() == RenderPipe.StopReason.OUTPUT_FAILED)
+                    && (textureFails ? model.stopReason() == RenderPipe.StopReason.CLOSED
+                    : texture.stopReason() == TexturePipe.StopReason.CLOSED),
+                "A failed material channel did not revoke its peer");
+        require(blocked.closed.get() && modelCancel.get() == 1 && textureCancel.get() == 1,
+                "Asynchronous failure did not cancel each endpoint exactly once");
+    }
+
+    private static void simultaneousFailure() throws InterruptedException {
+        CountDownLatch bothWriting = new CountDownLatch(2);
+        AtomicInteger modelCancel = new AtomicInteger(), textureCancel = new AtomicInteger();
+        MaterialPublisher publisher = new MaterialPublisher(source(44),
+                MaterialPipelineTests::sprites, 44, 7, 9,
+                new GatedFailure(bothWriting, bothWriting, false), modelCancel::incrementAndGet,
+                new GatedFailure(bothWriting, bothWriting, false), textureCancel::incrementAndGet);
+        RenderPipe model = publisher.modelTransport();
+        TexturePipe texture = publisher.textureTransport();
+        MaterialReloadRegistry.track(publisher);
+        require(publisher.publish(1, 1, KEY), "Concurrent failure capture was refused");
+        retired(model, texture);
+        require(model.ioFailure() instanceof IOException || texture.ioFailure() instanceof IOException,
+                "Concurrent channel failure lost every I/O cause");
+        require(modelCancel.get() == 1 && textureCancel.get() == 1,
+                "Concurrent channel failures repeated endpoint cancellation");
+    }
+
+    private static void registrationFailureRace() throws InterruptedException {
+        CountDownLatch entered = new CountDownLatch(1), release = new CountDownLatch(1);
+        AtomicInteger modelCancel = new AtomicInteger(), textureCancel = new AtomicInteger();
+        MaterialPublisher publisher = new MaterialPublisher(source(45),
+                MaterialPipelineTests::sprites, 45, 7, 9,
+                new ByteArrayOutputStream(), modelCancel::incrementAndGet,
+                new GatedFailure(entered, release, false), textureCancel::incrementAndGet);
+        RenderPipe model = publisher.modelTransport();
+        TexturePipe texture = publisher.textureTransport();
+        require(publisher.publish(1, 1, KEY), "Registry race capture was refused");
+        require(entered.await(5, TimeUnit.SECONDS), "Registry race writer did not start");
+        synchronized (MaterialReloadRegistry.class) {
+            MaterialReloadRegistry.track(publisher);
+            release.countDown();
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (model.isOpen() && System.nanoTime() < deadline) Thread.sleep(2);
+            require(!model.isOpen() && !texture.isOpen(),
+                    "Registry ownership prevented paired endpoint revocation");
+        }
+        retired(model, texture);
+        boolean rejected = false;
+        try { MaterialReloadRegistry.track(publisher); }
+        catch (IllegalArgumentException expected) { rejected = true; }
+        require(rejected && modelCancel.get() == 1 && textureCancel.get() == 1,
+                "Failed material publisher was registered again");
+    }
+
+    private static void stopListeners() throws InterruptedException {
+        AtomicInteger modelCalls = new AtomicInteger(), textureCalls = new AtomicInteger();
+        RenderPipe model = new RenderPipe(46, 7, 9, new ByteArrayOutputStream(), () -> {});
+        TexturePipe texture = new TexturePipe(46, 7, 9, new ByteArrayOutputStream(), () -> {});
+        model.close();
+        texture.close();
+        model.onStop(() -> {
+            modelCalls.incrementAndGet();
+            model.close();
+            texture.close();
+        });
+        texture.onStop(() -> {
+            textureCalls.incrementAndGet();
+            texture.close();
+            model.close();
+        });
+        model.close();
+        texture.close();
+        retired(model, texture);
+        require(modelCalls.get() == 1 && textureCalls.get() == 1,
+                "Late or reentrant stop notification was lost or repeated");
+        boolean modelRejected = false, textureRejected = false;
+        try { model.onStop(() -> {}); }
+        catch (IllegalStateException expected) { modelRejected = true; }
+        try { texture.onStop(() -> {}); }
+        catch (IllegalStateException expected) { textureRejected = true; }
+        require(modelRejected && textureRejected,
+                "A registered transport stop listener was replaced");
+
+        RenderPipe failedModel = new RenderPipe(47, 7, 9, new ByteArrayOutputStream(), () -> {});
+        TexturePipe failedTexture = new TexturePipe(47, 7, 9, new ByteArrayOutputStream(), () -> {});
+        RuntimeException modelError = new IllegalStateException("Render peer revocation failed");
+        RuntimeException textureError = new IllegalStateException("Texture peer revocation failed");
+        failedModel.onStop(() -> { throw modelError; });
+        failedTexture.onStop(() -> { throw textureError; });
+        failedModel.close();
+        failedTexture.close();
+        terminated(failedModel, failedTexture);
+        require(failedModel.cleanupFailure() == modelError
+                    && failedTexture.cleanupFailure() == textureError,
+                "Transport stop-listener errors were not retained");
     }
 
     public static void main(String[] args) throws Exception {
@@ -179,6 +335,14 @@ public final class MaterialPipelineTests {
         require(!reload.isOpen() && !reload.publish(1, 1, KEY),
                 "Client resource reload retained active source material session");
         retired(reload.modelTransport(), reload.textureTransport());
+
+        pairedFailure(40, false, false);
+        pairedFailure(41, false, true);
+        pairedFailure(42, true, false);
+        pairedFailure(43, true, true);
+        simultaneousFailure();
+        registrationFailureRace();
+        stopListeners();
 
         List<MaterialPublisher> active = new ArrayList<>();
         for (int i = 0; i < MaterialReloadRegistry.MAX_ACTIVE; ++i) {
