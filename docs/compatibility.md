@@ -11,7 +11,7 @@
 | Minecraft guest | Real Minecraft through Fabric | Ubuntu Fabric source compilation, remapping and production JAR checks passed; in-game GameTests unrun |
 | Client baked-model reader and render wire | Minecraft 1.21.4, pinned Yarn/Fabric, Java 21/C++20 | Static block-model quads plus bounded versioned binary codec; real game execution and host frame correlation unverified |
 | Loaded source sprite materials | Minecraft 1.21.4 SpriteContents/NativeImage, Java 21/C++20 | Bounded static source pixels (≤64×64, ≤16 sprites/model), client reload listener, async batch and native CPU material cache; in-game reload/Mixin, final atlas and host GPU upload unverified |
-| Bridge core and native peer | JDK 21, C++20, Linux x86_64 and Windows x64 | Strict compilation, reference-frame and real process tests pass on Linux/GCC and Windows/MinGW; MSVC remains unverified |
+| Bridge core and native peer | JDK 21, C++20, Linux x86_64 and Windows x64 | Strict compilation, reference-frame and real process checks run independently on Linux/GCC and Windows/MinGW; revision-specific outcomes are recorded in [PR #2](https://github.com/ranzevor/HarranCraft/pull/2); MSVC remains unverified |
 | Other Dying Light titles | Second game / The Beast | Outside the initial target |
 | Network game modes | Co-op / invasions / other multiplayer | Not supported; future host must reject them in code |
 

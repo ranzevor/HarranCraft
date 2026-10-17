@@ -32,6 +32,7 @@
 
 ### Changed
 
+- Native pipe fault tests acknowledge output closure and complete bounded diagnostics before owned-process termination, preserving original evidence failures and strict cleanup checks across cancellation races.
 - Material publishers immediately invalidate both transports and unregister on either asynchronous output failure, with one-time cancellation, preserved cleanup errors and silent-owner/concurrent-failure regressions.
 - Validation preserves probe timeout/interruption and diagnostic outcomes, requires completion of requested Gradle tasks even after exit code zero, rejects ambiguous invocation options and fixes game-test opt-ins per invocation.
 - Private-pipe shutdown supports explicit owned-endpoint cancellation, preserves I/O and cleanup failures, and exposes worker termination separately from connection invalidation. Queue handoff rejects reads completing after close. Native fault tests cover saturation, broken and partial pipes, concurrent close and repeated resource retirement.
@@ -40,12 +41,15 @@
 
 ### Validation
 
-Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and affected lifecycle/tooling regressions pass. Ubuntu/JDK 21 resolves Fabric dependencies and compiles production and GameTest sources, remaps the Mod JAR and verifies its contents in CI #38892925451. Minecraft GameTests, live Mod/Mixin loading, Windows Fabric builds and MSVC-specific native acceptance remain unrun or incomplete. No Dying Light host adapter or playable release is included.
+[CI #39016955612](https://github.com/ranzevor/HarranCraft/actions/runs/39016955612) at `c4888ff3f3a05263c069854188b623637277e50b` passed both Python jobs, Ubuntu Java/C++ validation and the Ubuntu/JDK 21 Fabric build. The Windows/MinGW job passed the native, material pipeline and cross-channel process stages, then failed the existing pipe input-saturation evidence check; its observation stage did not run. MSVC configuration returned zero but failed the owned-descendant gate with `vctip.exe` retained, preventing subsequent build and test stages. These are separate job outcomes, not a complete CI pass. Current revision evidence is maintained in [PR #2](https://github.com/ranzevor/HarranCraft/pull/2).
+
+Fabric compilation includes production and GameTest sources, Mod JAR remapping and production JAR verification. Minecraft GameTests, live Mod/Mixin loading, Windows Fabric builds and MSVC-specific native acceptance remain unrun or incomplete. No Dying Light host adapter or playable release is included.
 
 ## 简体中文
 
 ### 未发布变更
 
+- 原生管道故障测试在结束自有进程前确认输出关闭与有界诊断流完成，保留取消竞态中的原始证据异常及严格资源回收检查。
 - 新增原生跨通道材质协调：精确采集身份、有界乱序组装、完整清单激活、已替换采集的在途校验、绝对期限及独立 Java／C++ OS 管道回归。
 - 材质发布器在任一异步输出失败时立即取消双方传输并注销，保留单次取消、清理异常及所属线程静默／并发故障回归。
 - 新增有界多精灵材质异步批次、客户端资源重载时取消输出、原生 CPU 源像素完整性缓存与流接收，并补充 Java／C++ 进程回归。
@@ -73,4 +77,6 @@ Java/C++ reference frames, real process checks on Linux and Windows/MinGW, and a
 - 握手、重复回执或事件发送失败时关闭会话；适配器异常使其失效，输入／输出分别关闭；区块状态读取位于线程、模式和订阅检查之后；默认 Fabric 构建不运行 Minecraft。
 - 中英文桥接契约、验证入口、工具链状态及 H2 验收顺序同步维护。
 
-Java／C++ 参考帧、Linux 与 Windows/MinGW 真实进程测试及受影响生命周期／工具回归通过。Ubuntu/JDK 21 已在 CI #38892925451 完成 Fabric 依赖解析、生产与 GameTest 源码编译、Mod JAR 重映射及内容校验；Minecraft GameTest、实际 Mod/Mixin 装载、Windows Fabric 构建及 MSVC 专项验收仍未完成。当前不包含消光宿主适配器或可玩发行版。
+[CI #39016955612](https://github.com/ranzevor/HarranCraft/actions/runs/39016955612) 对应 `c4888ff3f3a05263c069854188b623637277e50b`：两个 Python 作业、Ubuntu Java／C++ 验证和 Ubuntu/JDK 21 Fabric 构建通过。Windows/MinGW 的原生、材质管线和跨通道进程阶段通过，随后既有管道输入饱和场景的证据检查失败，观察阶段未执行。MSVC 配置返回零，但因保留 `vctip.exe` 未通过自有后代进程检查，后续构建和测试未执行。这些是各作业的独立结果，不代表整轮 CI 通过。当前版本证据维护于 [PR #2](https://github.com/ranzevor/HarranCraft/pull/2)。
+
+Fabric 编译覆盖生产与 GameTest 源码、Mod JAR 重映射及生产 JAR 校验。Minecraft GameTest、实际 Mod/Mixin 装载、Windows Fabric 构建及 MSVC 专项验收仍未完成。当前不包含消光宿主适配器或可玩发行版。
