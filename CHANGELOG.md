@@ -32,6 +32,7 @@
 
 ### Changed
 
+- Windows native flood tests use synchronous Win32 writes and exact broken-pipe errors to acknowledge receiver closure without accepting generic CRT errors.
 - Native pipe fault tests acknowledge output closure and complete bounded diagnostics before owned-process termination, preserving original evidence failures and strict cleanup checks across cancellation races.
 - Material publishers immediately invalidate both transports and unregister on either asynchronous output failure, with one-time cancellation, preserved cleanup errors and silent-owner/concurrent-failure regressions.
 - Validation preserves probe timeout/interruption and diagnostic outcomes, requires completion of requested Gradle tasks even after exit code zero, rejects ambiguous invocation options and fixes game-test opt-ins per invocation.
@@ -45,10 +46,13 @@
 
 Fabric compilation includes production and GameTest sources, Mod JAR remapping and production JAR verification. Minecraft GameTests, live Mod/Mixin loading, Windows Fabric builds and MSVC-specific native acceptance remain unrun or incomplete. No Dying Light host adapter or playable release is included.
 
+[CI #39018668887](https://github.com/ranzevor/HarranCraft/actions/runs/39018668887) at `f1a50589b8ad783d15e213261d8175f25e23c0a7` retained the precise MinGW failure: the native flood's CRT flush returned `errno=22`, with missing terminal evidence and native exit 1 also reported. Both Python jobs, Ubuntu bridge validation and Fabric compilation passed; MSVC retained the same configure-stage blocker. This evidence identifies that run's CRT failure without retroactively assigning a cause to the earlier run's missing exception.
+
 ## 简体中文
 
 ### 未发布变更
 
+- Windows 原生持续写入测试采用同步 Win32 写入及确切的断管错误确认接收端关闭，不把通用 CRT 错误视作关闭证据。
 - 原生管道故障测试在结束自有进程前确认输出关闭与有界诊断流完成，保留取消竞态中的原始证据异常及严格资源回收检查。
 - 新增原生跨通道材质协调：精确采集身份、有界乱序组装、完整清单激活、已替换采集的在途校验、绝对期限及独立 Java／C++ OS 管道回归。
 - 材质发布器在任一异步输出失败时立即取消双方传输并注销，保留单次取消、清理异常及所属线程静默／并发故障回归。
@@ -80,3 +84,5 @@ Fabric compilation includes production and GameTest sources, Mod JAR remapping a
 [CI #39016955612](https://github.com/ranzevor/HarranCraft/actions/runs/39016955612) 对应 `c4888ff3f3a05263c069854188b623637277e50b`：两个 Python 作业、Ubuntu Java／C++ 验证和 Ubuntu/JDK 21 Fabric 构建通过。Windows/MinGW 的原生、材质管线和跨通道进程阶段通过，随后既有管道输入饱和场景的证据检查失败，观察阶段未执行。MSVC 配置返回零，但因保留 `vctip.exe` 未通过自有后代进程检查，后续构建和测试未执行。这些是各作业的独立结果，不代表整轮 CI 通过。当前版本证据维护于 [PR #2](https://github.com/ranzevor/HarranCraft/pull/2)。
 
 Fabric 编译覆盖生产与 GameTest 源码、Mod JAR 重映射及生产 JAR 校验。Minecraft GameTest、实际 Mod/Mixin 装载、Windows Fabric 构建及 MSVC 专项验收仍未完成。当前不包含消光宿主适配器或可玩发行版。
+
+[CI #39018668887](https://github.com/ranzevor/HarranCraft/actions/runs/39018668887) 对应 `f1a50589b8ad783d15e213261d8175f25e23c0a7`，保留了确切的 MinGW 失败原因：原生持续写入的 CRT flush 返回 `errno=22`，同时报告缺少诊断终止记录及原生退出码 1。两个 Python 作业、Ubuntu 桥接验证和 Fabric 编译通过；MSVC 仍在配置阶段受阻。该证据确定本轮 CRT 失败，不反推此前未保留原始异常的作业一定具有相同原因。

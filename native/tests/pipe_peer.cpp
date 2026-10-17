@@ -10,6 +10,10 @@
 #include <string_view>
 #include <thread>
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #include <fcntl.h>
 #include <io.h>
 #endif
@@ -46,12 +50,39 @@ static void diagnostic(const char* value) {
 }
 
 static void flood(const Bytes& bytes) {
-#ifndef _WIN32
+#ifdef _WIN32
+    const HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (output == INVALID_HANDLE_VALUE) {
+        const DWORD error = GetLastError();
+        throw std::runtime_error("Cannot obtain flood output (win32=" + std::to_string(error) + ")");
+    }
+    if (output == nullptr) throw std::runtime_error("Missing inherited flood output handle");
+    SetLastError(ERROR_SUCCESS);
+    const DWORD type = GetFileType(output);
+    const DWORD type_error = GetLastError();
+    if (type != FILE_TYPE_PIPE)
+        throw std::runtime_error("Flood output is not a pipe (type=" + std::to_string(type)
+                + ", win32=" + std::to_string(type_error) + ")");
+#else
     // This scenario observes EPIPE as an explicit receiver-cancellation acknowledgement.
     if (std::signal(SIGPIPE, SIG_IGN) == SIG_ERR) failure("Cannot observe closed flood output", errno);
 #endif
     diagnostic("ready");
     for (;;) {
+#ifdef _WIN32
+        DWORD written = 0;
+        const DWORD requested = static_cast<DWORD>(bytes.size());
+        SetLastError(ERROR_SUCCESS);
+        const BOOL succeeded = WriteFile(output, bytes.data(), requested, &written, nullptr);
+        const DWORD error = GetLastError();
+        if (!succeeded) {
+            if (error == ERROR_BROKEN_PIPE) break;
+            throw std::runtime_error("Flood WriteFile failed (win32=" + std::to_string(error) + ")");
+        }
+        if (written != requested)
+            throw std::runtime_error("Short successful flood write (bytes=" + std::to_string(written)
+                    + ", win32=" + std::to_string(error) + ")");
+#else
         errno = 0;
         const auto written = std::fwrite(bytes.data(), 1, bytes.size(), stdout);
         const int write_error = errno;
@@ -66,6 +97,7 @@ static void flood(const Bytes& bytes) {
             if (flush_error == EPIPE) break;
             failure("Flood flush failed", flush_error);
         }
+#endif
     }
     diagnostic("flood-output-closed");
 }
